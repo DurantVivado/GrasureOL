@@ -1,0 +1,33 @@
+// settings.json 
+{
+        "files.autoSave": "onFocusChange",
+        
+        "go.buildOnSave": "package",
+        "go.lintOnSave": "package",
+        "go.vetOnSave": "package",
+        "go.buildTags": "",
+        "go.buildFlags": [],
+        "go.testTimeout": "7200s",
+        "go.testFlags": [
+            "-v",
+            "-cpuprofile", "profiles/cpuGCA.profile",
+            "-memprofile",  "profiles/memGCA.profile",
+            "-blockprofile", "profiles/blkGCA.profile",
+            // "-coverprofile", "profiles/cover.out",
+            "-benchtime=10x"
+        ],
+            
+         "go.lintFlags": [],
+        "go.vetFlags": [],
+        "go.coverOnSave": false,
+        "go.useCodeSnippetsOnFunctionSuggest": true,
+        "go.autocompleteUnimportedPackages": true,
+        "go.formatTool": "gofmt",
+        "go.goroot": "/usr/local/go",    
+        "go.gopath": "/home/grasure/go", 
+        "go.gocodeAutoBuild": true
+    
+        
+    }
+    
+    
