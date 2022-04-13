@@ -6,12 +6,6 @@ Basically, we adopt Grausre as the core fullfilling functionalities like writing
 And a pretty-looking HTTP frontend.
 
 
-- Reliability: Grasure/reedsolomon
-- Availability: Grasure/reedsolomon
-- distributivity: Consistenthash, gRPC
-- Scalability: Docker
-- Connectivity: HTTP,gRPC
-- functionality: 
-- user-friendly: Gin, Gorm, andlabs/ui
-- developer-friendly:
-- high-performance:
+This project is governed by Durant Thorvalds since 13th, April, 2022.
+
+
