@@ -13,7 +13,7 @@ import (
 	"runtime/pprof"
 	"time"
 
-	grasure "github.com/DurantVivado/Grasure"
+	grasure "github.com/DurantVivado/GrasureOL"
 	"github.com/pkg/profile"
 )
 

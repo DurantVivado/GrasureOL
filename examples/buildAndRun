@@ -1,0 +1,29 @@
+#!/bin/bash
+#go build -o grasure erasure-*.go main.go
+# init the system
+if [ $# -ne 1 ];then
+        echo Usage: ./buildAndRun [filename], filename should not contain relative path
+        exit
+fi
+
+file=$1
+
+./grasure -md init -k 12 -m 4 -dn 24 -bs 4096
+
+# A loopback system
+./grasure -md encode -f /home/grasure/data/$file -o -conStripes 400
+./grasure -md read -f $file -conStripes 400 -fn 0 -sp output/$file
+#4G
+# srchash="8479e43911dc45e89f934fe48d01297e16f51d17aa561d4d1c216b1ae0fcddca"
+#1G
+srchash="f3cbd2e1096b0e472b5deabf780b7b8d52c714a7ca544b20d610a7b8a06687f9"
+#16G 
+#srcHash="07d217ebccc55480b7afa191674ec5da87f2d14efbc04dbc7e40efe345f16776"
+dsthash=(`sha256sum output/$file|tr ' ' ' '`)
+echo $srchash
+echo $dsthash
+if [ $srchash == $dsthash ];then 
+    echo "hash check succeeds"
+else
+    echo "hash check fails"
+fi

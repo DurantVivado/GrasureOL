@@ -61,7 +61,7 @@ func (e *Erasure) ReadDiskPath() error {
 //Note if `assume` renders yes then the consulting part will be skipped.
 func (e *Erasure) InitSystem(assume bool) error {
 	if !e.Quiet {
-		fmt.Println("Warning: you are intializing a new erasure-coded system, which means the previous data will also be reset.")
+		fmt.Println("Warning: you are initializing a new erasure-coded system, which means the previous data will also be reset.")
 	}
 	if !assume {
 		if ans, err := consultUserBeforeAction(); !ans && err == nil {
