@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"os"
 
-	grasure "github.com/DurantVivado/Grasure"
+	grasure "github.com/DurantVivado/GrasureOL"
 )
 
 func fillRandom(p []byte) {

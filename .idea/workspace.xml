@@ -4,12 +4,90 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9a9bb6ac-edbf-47d8-a863-f82adff001e5" name="Changes" comment="">
+    <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/codec/codec.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/codec/gob.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/erasure-client.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/erasure-server.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/erasure-server_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/Makefile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-encode.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-errors.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-global.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-init.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-layout.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-read.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-recover.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-scaling.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-simFailure.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-update.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-utils.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/appveyor.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galoisAvx512_amd64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galoisAvx512_amd64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_amd64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_amd64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_arm64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_gen_amd64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_gen_amd64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_gen_none.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_gen_switch_amd64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_noasm.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_notamd64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_ppc64le.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/galois_ppc64le.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/inversion_tree.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/matrix.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/options.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/reedsolomon.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/DurantVivado/reedsolomon/streaming.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/.goreleaser.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/CONTRIBUTING.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/cpuid.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/cpuid_386.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/cpuid_amd64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/cpuid_arm64.s" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/detect_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/detect_ref.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/detect_x86.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/featureid_string.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/os_darwin_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/os_linux_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/os_other_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/os_safe_linux_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/os_unsafe_linux_arm64.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/klauspost/cpuid/v2/test-architectures.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/AUTHORS" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/github.com/pkg/profile/profile.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/AUTHORS" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/CONTRIBUTORS" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/PATENTS" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/golang.org/x/sync/errgroup/errgroup.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xlog/xlog.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xlog/xlog_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-init.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-init.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-layout.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-layout.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,8 +105,13 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectId" id="23SBMbVnDZcLiWVg0OvkKoD3Ay7" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="ProjectId" id="27mMT9aeRkeEnAky3IWxHfKwyef" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -43,20 +126,86 @@
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="go.vendoring.notification.had.been.shown" value="true" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
-  <component name="RunManager">
-    <configuration name="go build github.com/DurantVivado/GrasureOL" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.TestServer_ServeConn in github.com/DurantVivado/GrasureOL">
+    <configuration name="TestColor in github.com/DurantVivado/GrasureOL/xlog" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
+      <working_directory value="$PROJECT_DIR$/xlog" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/DurantVivado/GrasureOL/xlog" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestColor\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestServer_ServeConn in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
       <package value="github.com/DurantVivado/GrasureOL" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestServer_ServeConn\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestServer_Start in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/DurantVivado/GrasureOL" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestServer_Start\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestSetLevel in github.com/DurantVivado/GrasureOL/xlog" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
+      <working_directory value="$PROJECT_DIR$/xlog" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/DurantVivado/GrasureOL/xlog" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSetLevel\E$" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestServer_ServeConn in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestServer_Start in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestColor in github.com/DurantVivado/GrasureOL/xlog" />
+        <item itemvalue="Go Test.TestSetLevel in github.com/DurantVivado/GrasureOL/xlog" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/xlog/xlog_test.go</url>
+          <line>14</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/erasure-server_test.go</url>
+          <line>14</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -1,6 +1,6 @@
 package grasure
 
-//Exemplar random distribution layout generator
+//Examplar random distribution layout generator
 //Two structure need specialized: fi.blockToOffset and fi.Distribution
 func (e *Erasure) generateLayout(fi *fileInfo) {
 	if fi == nil {
