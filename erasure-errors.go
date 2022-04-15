@@ -16,6 +16,12 @@ func (e *diskError) Error() string {
 
 //Error definitions
 
+var errInvalidShardNumber = errors.New("the erasure codes parameter is invalid")
+
+var errNotEnoughNodeAvailable = errors.New("cannot create cluster when data+parity > available nodes number")
+
+var errMaxShardNum = errors.New("cannot create cluster with more than 256 data+parity shards")
+
 var errConfFileNotExist = errors.New("the conf file not exist")
 
 var errEmptyData = errors.New("the file to encode is empty")

@@ -198,3 +198,13 @@ func (e *Erasure) stripedFileSize(totalLen int64) int64 {
 	numStripe := ceilFracInt64(totalLen, e.dataStripeSize)
 	return numStripe * e.allStripeSize
 }
+
+
+//Write Phase
+//First, we encode the file into data and parity blocks.
+//Second, we send accumulated data blocks or parity blocks to storage nodes,
+// respectively.
+//Third, the storage nodes response ok once persisting the data on disks or SSD.
+func writeToNode(data []byte, nodeId int) error{
+	return nil
+}

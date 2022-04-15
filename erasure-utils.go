@@ -5,6 +5,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/DurantVivado/GrasureOL/xlog"
+	"github.com/bwmarrin/snowflake"
 	"io"
 	"math/rand"
 	"os"
@@ -288,4 +290,15 @@ func copyFile(srcFile, destFile string) (int64, error) {
 	}
 	defer file2.Close()
 	return io.Copy(file2, file1)
+}
+
+//generate random uuid
+// fix id = 0 as the cluster id
+// id > 1 as the node id
+func genUUID(id int64) string{
+	node,err := snowflake.NewNode(id)
+	if err != nil{
+		xlog.Errorf("gen uuid failed", err)
+	}
+	return node.Generate().String()
 }

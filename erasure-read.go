@@ -218,3 +218,16 @@ func (e *Erasure) splitStripe(data []byte) ([][]byte, error) {
 
 	return dst, nil
 }
+
+//Read Phase
+// normal mode:
+//First, figure out which nodes storage the blocks according to the meta;
+//Second, send response to storage nodes when all is completed.
+// degraded mode:
+//First,  figure out which nodes storage the blocks according to the meta and algorithm;
+//Second, send response to storage nodes when all is completed.
+//Third, the computing node reconstruct the file.
+
+func readFromNode(filename string, nodeId int) (data[]byte, err error){
+	return nil, err
+}

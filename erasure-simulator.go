@@ -8,6 +8,18 @@ import (
 	"strings"
 )
 
+//SimOptions defines the parameters for simulation
+type SimOptions struct {
+	//switch between "diskFail" and "bitRot"
+	Mode string
+	// specify which disks to fail
+	FailDisk string
+	// specify number of disks to fail
+	FailNum int
+	//specify the fileName, used only for "bitRot" mode
+	FileName string
+}
+
 //the proportion of stripe where bitrot occurs of all stripes
 const stripeFailProportion = 0.3
 

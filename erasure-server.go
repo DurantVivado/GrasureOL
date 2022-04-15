@@ -159,3 +159,4 @@ func(s *Server) Start(network, addr string){
 	xlog.Infoln("start rpc server on :", l.Addr())
 	s.Accept(l)
 }
+

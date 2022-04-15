@@ -9,25 +9,157 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/DurantVivado/reedsolomon"
 	"golang.org/x/sync/errgroup"
 )
 
-//ReadDiskPath reads the disk paths from diskFilePath.
-//There should be exactly ONE disk path at each line.
-//
-//This func can NOT be called concurrently.
-func (e *Erasure) ReadDiskPath() error {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	f, err := os.Open(e.DiskFilePath)
+const (
+	defaultInfoFilePath = "cluster.info"
+	defaultNodeFilePath = "nodes.addr"
+)
+type Cluster struct{
+	//the global unique id of a cluster
+	uuid string
+
+	//the nodes' info of a cluster, i.e. id->*Node
+	nodes map[uint32]*Node
+
+	//capacity related parameters
+	Used    uint64
+	Free    uint64
+	Total   uint64
+
+	// the number of data blocks in a stripe
+	K int `json:"dataShards"`
+
+	// the number of parity blocks in a stripe
+	M int `json:"parityShards"`
+
+	// the block size. default to 4KiB
+	BlockSize int64 `json:"blockSize"`
+
+	//FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
+	FileMeta []*fileInfo `json:"fileLists"`
+
+	//how many stripes are allowed to encode/decode concurrently
+	ConStripes int `json:"-"`
+
+	// the replication factor for config file
+	ReplicateFactor int
+
+	// the reedsolomon streaming encoder, for streaming access
+	sEnc reedsolomon.StreamEncoder
+
+	// the reedsolomon encoder, for block access
+	enc reedsolomon.Encoder
+
+	// the data stripe size, equal to k*bs
+	dataStripeSize int64
+
+	// the data plus parity stripe size, equal to (k+m)*bs
+	allStripeSize int64
+
+	// infoFile storage basic information of the cluster
+	InfoFilePath string `json:"-"`
+
+	//the path of file includes all nodes address, provided by user
+	NodeFilePath string `json:"-"`
+
+	//file map
+	fileMap sync.Map
+
+
+	// whether to override former files or directories, default to false
+	Override bool `json:"-"`
+
+	// errgroup pool
+	errgroupPool sync.Pool
+
+	// mutex
+	mu sync.RWMutex
+
+	//whether to mute outputs
+	Quiet bool `json:"-"`
+}
+
+
+//NewCluster initializes a Cluster with customized ataShards, parityShards, usedNodeNum, replicateFactor and blockSize
+func NewCluster(dataShards, parityShards, usedNodeNum, replicateFactor int, blockSize int64) (c *Cluster, err error) {
+	
+	//if !e.Quiet {
+	//	fmt.Println("Warning: you are initializing a new erasure-coded system, which means the previous data will also be reset.")
+	//}
+	//if !assume {
+	//	if ans, err := consultUserBeforeAction(); !ans && err == nil {
+	//		return nil
+	//	} else if err != nil {
+	//		return err
+	//	}
+	//}
+	if dataShards <= 0 || parityShards <= 0 {
+		return nil, errInvalidShardNumber
+	}
+	//The reedsolomon library only implements GF(2^8) and will be improved later
+	if dataShards + parityShards > 256 {
+		return nil, errMaxShardNum
+	}
+	if dataShards + parityShards > usedNodeNum {
+		return nil, errNotEnoughNodeAvailable
+	}
+	//if e.DiskNum > len(e.diskInfos) {
+	//	return errDiskNumTooLarge
+	//}
+	//if e.ConStripes < 1 {
+	//	e.ConStripes = 1 //totally serialized
+	//}
+	//replicate the config files
+
+	if replicateFactor < 1 {
+		return nil, errInvalidReplicateFactor
+	}
+	//err = e.resetSystem()
+	//if err != nil {
+	//	return err
+	//}
+	//if !e.Quiet {
+	//	fmt.Printf("System init!\n Erasure parameters: dataShards:%d, parityShards:%d,blocksize:%d,diskNum:%d\n",
+	//		e.K, e.M, e.BlockSize, e.DiskNum)
+	//}
+	c = &Cluster{
+		uuid:            genUUID(0),
+		Used:            0,
+		Free:            0,
+		Total:           0,
+		K:               dataShards,
+		M:               parityShards,
+		BlockSize:       blockSize,
+		ConStripes:      100,
+		ReplicateFactor: replicateFactor,
+		dataStripeSize:  int64(dataShards) * blockSize,
+		allStripeSize:   int64(dataShards+parityShards) * blockSize,
+		InfoFilePath:    defaultInfoFilePath,
+		NodeFilePath: 	 defaultNodeFilePath,
+		Override:        false,
+		errgroupPool:    sync.Pool{},
+		mu:              sync.RWMutex{},
+		Quiet:           false,
+	}
+	return c,nil
+}
+
+//read nodes
+func (c* Cluster) ReadNodes() error{
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	f, err := os.Open(c.NodeFilePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	buf := bufio.NewReader(f)
-	e.diskInfos = make([]*diskInfo, 0)
+	c.nodes = make(map[uint32]*Node, 0)
 	for {
 		line, _, err := buf.ReadLine()
 		if err == io.EOF {
@@ -55,52 +187,8 @@ func (e *Erasure) ReadDiskPath() error {
 	return nil
 }
 
-//Init initiates the erasure-coded system, this func can NOT be called concurrently.
-// It will clear all the data on the storage, so a consulting procedure is added in advance of perilous action.
-//
-//Note if `assume` renders yes then the consulting part will be skipped.
-func (e *Erasure) InitSystem(assume bool) error {
-	if !e.Quiet {
-		fmt.Println("Warning: you are intializing a new erasure-coded system, which means the previous data will also be reset.")
-	}
-	if !assume {
-		if ans, err := consultUserBeforeAction(); !ans && err == nil {
-			return nil
-		} else if err != nil {
-			return err
-		}
-	}
-	if e.K <= 0 || e.M <= 0 {
-		return reedsolomon.ErrInvShardNum
-	}
-	//The reedsolomon library only implements GF(2^8) and will be improved later
-	if e.K+e.M > 256 {
-		return reedsolomon.ErrMaxShardNum
-	}
-	if e.K+e.M > e.DiskNum {
-		return errTooFewDisksAlive
-	}
-	if e.DiskNum > len(e.diskInfos) {
-		return errDiskNumTooLarge
-	}
-	//replicate the config files
-
-	if e.ReplicateFactor < 1 {
-		return errNegativeReplicateFactor
-	}
-	err = e.resetSystem()
-	if err != nil {
-		return err
-	}
-	if !e.Quiet {
-		fmt.Printf("System init!\n Erasure parameters: dataShards:%d, parityShards:%d,blocksize:%d,diskNum:%d\n",
-			e.K, e.M, e.BlockSize, e.DiskNum)
-	}
-	return nil
-}
-
-//reset the storage assets
-func (e *Erasure) reset() error {
+//reset the storage
+func (c *Cluster) reset() error {
 
 	g := new(errgroup.Group)
 
@@ -131,7 +219,7 @@ func (e *Erasure) reset() error {
 }
 
 //reset the system including config and data
-func (e *Erasure) resetSystem() error {
+func (c *Cluster) resetSystem() error {
 
 	//in-memory meta reset
 	e.FileMeta = make([]*fileInfo, 0)
@@ -161,7 +249,7 @@ func (e *Erasure) resetSystem() error {
 //ReadConfig reads the config file during system warm-up.
 //
 //Calling it before actions like encode and read is a good habit.
-func (e *Erasure) ReadConfig() error {
+func (c *Cluster) ReadConfig() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -247,7 +335,7 @@ func (e *Erasure) ReadConfig() error {
 
 //Replicate the config file into the system for k-fold
 //it's NOT striped and encoded as a whole piece.
-func (e *Erasure) replicateConfig(k int) error {
+func (c *Cluster) replicateConfig(k int) error {
 	selectDisk := genRandomArr(e.DiskNum, 0)[:k]
 	for _, i := range selectDisk {
 		disk := e.diskInfos[i]
@@ -265,7 +353,7 @@ func (e *Erasure) replicateConfig(k int) error {
 //WriteConfig writes the erasure parameters and file information list into config files.
 //
 //Calling it after actions like encode and read is a good habit.
-func (e *Erasure) WriteConfig() error {
+func (c *Cluster) WriteConfig() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -294,7 +382,7 @@ func (e *Erasure) WriteConfig() error {
 		return err
 	}
 	buf.Flush()
-	f.Sync()
+	// f.Sync()
 	err = e.updateConfigReplica()
 	if err != nil {
 		return err
@@ -303,7 +391,7 @@ func (e *Erasure) WriteConfig() error {
 }
 
 //reconstruct the config file if possible
-func (e *Erasure) rebuildConfig() error {
+func (c *Cluster) rebuildConfig() error {
 	//we read file meta in the disk path and try to rebuild the config file
 	for i := range e.diskInfos[:e.DiskNum] {
 		disk := e.diskInfos[i]
@@ -321,7 +409,7 @@ func (e *Erasure) rebuildConfig() error {
 }
 
 //update the config file of all replica
-func (e *Erasure) updateConfigReplica() error {
+func (c *Cluster) updateConfigReplica() error {
 
 	//we read file meta in the disk path and try to rebuild the config file
 	if e.ReplicateFactor < 1 {
@@ -341,79 +429,3 @@ func (e *Erasure) updateConfigReplica() error {
 	return nil
 }
 
-//RemoveFile deletes specific file `filename`in the system.
-//
-//Both the file blobs and meta data are deleted. It's currently irreversible.
-func (e *Erasure) RemoveFile(filename string) error {
-	baseFilename := filepath.Base(filename)
-	if _, ok := e.fileMap.Load(baseFilename); !ok {
-		return fmt.Errorf("the file %s does not exist in the file system",
-			baseFilename)
-	}
-	g := new(errgroup.Group)
-
-	for _, path := range e.diskInfos[:e.DiskNum] {
-		path := path
-		files, err := os.ReadDir(path.diskPath)
-		if err != nil {
-			return err
-		}
-		if len(files) == 0 {
-			continue
-		}
-		g.Go(func() error {
-
-			err = os.RemoveAll(filepath.Join(path.diskPath, baseFilename))
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	e.fileMap.Delete(baseFilename)
-	// delete(e.fileMap, filename)
-	if !e.Quiet {
-		log.Printf("file %s successfully deleted.", baseFilename)
-	}
-	return nil
-}
-
-//check if file exists both in config and storage blobs
-func (e *Erasure) checkIfFileExist(filename string) (bool, error) {
-	//1. first check the storage blobs if file still exists
-	baseFilename := filepath.Base(filename)
-
-	g := new(errgroup.Group)
-
-	for _, path := range e.diskInfos[:e.DiskNum] {
-		path := path
-		files, err := os.ReadDir(path.diskPath)
-		if err != nil {
-			return false, err
-		}
-		if len(files) == 0 {
-			continue
-		}
-		g.Go(func() error {
-
-			subpath := filepath.Join(path.diskPath, baseFilename)
-			if ok, err := pathExist(subpath); !ok && err == nil {
-				return errFileBlobNotFound
-			} else if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return false, err
-	}
-	//2. check if fileMap contains the file
-	if _, ok := e.fileMap.Load(baseFilename); !ok {
-		return false, nil
-	}
-	return true, nil
-}

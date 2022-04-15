@@ -1,9 +1,11 @@
 # github.com/DurantVivado/Grasure v0.0.4
 ## explicit; go 1.17
-github.com/DurantVivado/Grasure
 # github.com/DurantVivado/reedsolomon v0.0.3
 ## explicit; go 1.17
 github.com/DurantVivado/reedsolomon
+# github.com/bwmarrin/snowflake v0.3.0
+## explicit
+github.com/bwmarrin/snowflake
 # github.com/klauspost/cpuid/v2 v2.0.9
 ## explicit; go 1.13
 github.com/klauspost/cpuid/v2
