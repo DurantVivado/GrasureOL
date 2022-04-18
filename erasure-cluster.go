@@ -2,123 +2,94 @@ package grasure
 
 import (
 	"bufio"
-	"encoding/json"
-	"fmt"
+	"github.com/DurantVivado/GrasureOL/xlog"
+	"hash/crc32"
 	"io"
-	"io/ioutil"
-	"log"
+	"net"
 	"os"
-	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
-
-	"github.com/DurantVivado/reedsolomon"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
 	defaultInfoFilePath = "cluster.info"
-	defaultNodeFilePath = "nodes.addr"
+	defaultNodeFilePath = "examples/nodes.addr"
+	defaultVirtualNum = 3
 )
+
+type Mode string
+
+const (
+	InitMode Mode = "Init"
+	NormalMode Mode = "Normal"
+	DegradedMode Mode = "Degraded"
+	RecoveryMode Mode = "Recovery"
+	ScaleMode Mode = "Scale"
+	PowerSaveMode Mode = "PowerSave"
+)
+
+type ClusterOption struct{
+	verbose bool
+	override int // 1:true, 0:false, 2:ABA (ask before action)
+}
+
+var defaultClusterOption = &ClusterOption{
+	verbose: true,
+	override: 2,
+}
+
+//Hash maps bytes to uint32
+type Hash func(key []byte) uint32
+
 type Cluster struct{
-	//the global unique id of a cluster
-	uuid string
+	//uuid is the global unique id of a cluster
+	uuid int64
 
-	//the nodes' info of a cluster, i.e. id->*Node
-	nodes map[uint32]*Node
+	//the mode on which the cluster operates
+	mode Mode
 
-	//capacity related parameters
+	//acl represents access control and database
+	acl *ACL
+
+	//consistentHash func
+	hash Hash
+
+	//nodeMap contains all the node using consistent hash algorithm
+	nodeMap  map[int64]*Node
+
+	//nodeList is a list containing all nodes' uuid, with only the first usedNodeNum nodes used
+	nodeList []int64
+
+	// virtualNum is the number of virtual nodes in consistent hash
+	virtualNum int
+
+	//usedNodeNum is the number of used nodes in given NodeFilePath
+	usedNodeNum int
+
+	//pools are referred to as a specific group of erasure coding, in the form (codeType-K-M-BlockSize),
+	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.
+	pools []*ErasurePool
+
+	//Used, Free, Total are capacity-related parameters
 	Used    uint64
 	Free    uint64
 	Total   uint64
 
-	// the number of data blocks in a stripe
-	K int `json:"dataShards"`
-
-	// the number of parity blocks in a stripe
-	M int `json:"parityShards"`
-
-	// the block size. default to 4KiB
-	BlockSize int64 `json:"blockSize"`
-
-	//FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
-	FileMeta []*fileInfo `json:"fileLists"`
-
-	//how many stripes are allowed to encode/decode concurrently
-	ConStripes int `json:"-"`
-
-	// the replication factor for config file
-	ReplicateFactor int
-
-	// the reedsolomon streaming encoder, for streaming access
-	sEnc reedsolomon.StreamEncoder
-
-	// the reedsolomon encoder, for block access
-	enc reedsolomon.Encoder
-
-	// the data stripe size, equal to k*bs
-	dataStripeSize int64
-
-	// the data plus parity stripe size, equal to (k+m)*bs
-	allStripeSize int64
-
-	// infoFile storage basic information of the cluster
+	//InfoFilePath is the path of a textual file storing basic information of the cluster
 	InfoFilePath string `json:"-"`
 
-	//the path of file includes all nodes address, provided by user
+	//NodeFilePath is the path of file includes all nodes address, provided by user
 	NodeFilePath string `json:"-"`
 
-	//file map
-	fileMap sync.Map
+	options *ClusterOption `json:"-"`
 
-
-	// whether to override former files or directories, default to false
-	Override bool `json:"-"`
-
-	// errgroup pool
-	errgroupPool sync.Pool
-
-	// mutex
-	mu sync.RWMutex
-
-	//whether to mute outputs
-	Quiet bool `json:"-"`
+	mu sync.Mutex
 }
 
 
 //NewCluster initializes a Cluster with customized ataShards, parityShards, usedNodeNum, replicateFactor and blockSize
-func NewCluster(dataShards, parityShards, usedNodeNum, replicateFactor int, blockSize int64) (c *Cluster, err error) {
-	
-	//if !e.Quiet {
-	//	fmt.Println("Warning: you are initializing a new erasure-coded system, which means the previous data will also be reset.")
-	//}
-	//if !assume {
-	//	if ans, err := consultUserBeforeAction(); !ans && err == nil {
-	//		return nil
-	//	} else if err != nil {
-	//		return err
-	//	}
-	//}
-	if dataShards <= 0 || parityShards <= 0 {
-		return nil, errInvalidShardNumber
-	}
-	//The reedsolomon library only implements GF(2^8) and will be improved later
-	if dataShards + parityShards > 256 {
-		return nil, errMaxShardNum
-	}
-	if dataShards + parityShards > usedNodeNum {
-		return nil, errNotEnoughNodeAvailable
-	}
-	//if e.DiskNum > len(e.diskInfos) {
-	//	return errDiskNumTooLarge
-	//}
-	//if e.ConStripes < 1 {
-	//	e.ConStripes = 1 //totally serialized
-	//}
-	//replicate the config files
-
-	if replicateFactor < 1 {
-		return nil, errInvalidReplicateFactor
-	}
+func NewCluster(usedNodeNum int, hashfn Hash) *Cluster {
 	//err = e.resetSystem()
 	//if err != nil {
 	//	return err
@@ -127,39 +98,49 @@ func NewCluster(dataShards, parityShards, usedNodeNum, replicateFactor int, bloc
 	//	fmt.Printf("System init!\n Erasure parameters: dataShards:%d, parityShards:%d,blocksize:%d,diskNum:%d\n",
 	//		e.K, e.M, e.BlockSize, e.DiskNum)
 	//}
-	c = &Cluster{
+	if hashfn == nil{
+		hashfn = crc32.ChecksumIEEE
+	}
+	c := &Cluster{
 		uuid:            genUUID(0),
 		Used:            0,
 		Free:            0,
 		Total:           0,
-		K:               dataShards,
-		M:               parityShards,
-		BlockSize:       blockSize,
-		ConStripes:      100,
-		ReplicateFactor: replicateFactor,
-		dataStripeSize:  int64(dataShards) * blockSize,
-		allStripeSize:   int64(dataShards+parityShards) * blockSize,
+		hash: hashfn,
+		usedNodeNum: usedNodeNum,
 		InfoFilePath:    defaultInfoFilePath,
 		NodeFilePath: 	 defaultNodeFilePath,
-		Override:        false,
-		errgroupPool:    sync.Pool{},
-		mu:              sync.RWMutex{},
-		Quiet:           false,
+		nodeMap: make(map[int64]*Node),
+		nodeList: make([]int64, 0),
+		virtualNum: defaultVirtualNum,
+		options: defaultClusterOption,
 	}
-	return c,nil
+	return c
 }
 
-//read nodes
-func (c* Cluster) ReadNodes() error{
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+//AddNode adds a node into cluster using ConsistentHashAlgorithm
+func (c* Cluster) AddNode(uuid int64, node *Node){
+	for i := 0; i < c.virtualNum; i++ {
+		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + string(uuid))))
+		c.nodeList = append(c.nodeList, hashVal)
+	}
+	c.nodeMap[uuid] = node
+	sortInt64(c.nodeList)
+}
+
+//ReadNodesAddr reads the node information from file
+func (c* Cluster) ReadNodesAddr() error{
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	//parse the node_addr file
 	f, err := os.Open(c.NodeFilePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	buf := bufio.NewReader(f)
-	c.nodes = make(map[uint32]*Node, 0)
+	id := int64(1)
+
 	for {
 		line, _, err := buf.ReadLine()
 		if err == io.EOF {
@@ -168,25 +149,46 @@ func (c* Cluster) ReadNodes() error{
 		if err != nil {
 			return err
 		}
-		path := string(line)
-		if ok, err := pathExist(path); !ok && err == nil {
-			return &diskError{path, "disk path not exist"}
-		} else if err != nil {
+		lineStr := string(line)
+		if strings.HasPrefix(lineStr, "//"){
+			continue
+		}
+		lineArr := strings.Split(lineStr, " ")
+		addr := lineArr[0]
+		nodeTyp := int16(0)
+		for _, role := range strings.Split(lineArr[1],","){
+			nodeTyp = nodeTyp | getType(role)
+		}
+
+		node, err := NewNode(id, addr, NodeType(nodeTyp))
+		if err != nil{
 			return err
 		}
-		metaPath := filepath.Join(path, "META")
-		flag := false
-		if ok, err := pathExist(metaPath); ok && err == nil {
-			flag = true
-		} else if err != nil {
-			return err
+		if id <= int64(c.usedNodeNum) {
+			c.AddNode(node.uid, node)
 		}
-		diskInfo := &diskInfo{diskPath: string(line), available: true, ifMetaExist: flag}
-		e.diskInfos = append(e.diskInfos, diskInfo)
+		c.nodeList = append(c.nodeList, node.uid)
+		id++
 	}
 	return nil
 }
 
+//ConnectNodes connect to all nodes and if successful, return nil
+func(c *Cluster) ConnectNodes(port string){
+	//Every node must connect to other nodes to testify connection
+	for _, node := range c.nodeMap{
+		if isMyself(node.addr){
+			continue
+		}
+		conn, err := net.Dial("tcp", node.addr+port)
+		if err != nil{
+			xlog.Errorln("connect to %s failed with:", node.addr, err)
+		}
+		node.conn = &conn
+	}
+	xlog.Infoln("all nodes successfully connected")
+}
+/*
 //reset the storage
 func (c *Cluster) reset() error {
 
@@ -429,3 +431,4 @@ func (c *Cluster) updateConfigReplica() error {
 	return nil
 }
 
+*/

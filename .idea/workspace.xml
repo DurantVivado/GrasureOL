@@ -5,46 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/consistent_hash/consistent_hash.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/consistent_hash/consistent_hash_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/erasure-remove.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/erasure-transfer.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/erasure_client_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/examples/nodes.addr" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/protobuf/rpc.proto" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/github.com/bwmarrin/snowflake/.travis.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/github.com/bwmarrin/snowflake/LICENSE" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/github.com/bwmarrin/snowflake/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vendor/github.com/bwmarrin/snowflake/snowflake.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-client.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-encode.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-encode.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/erasure-file.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/erasure-pool.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-errors.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-global.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-init.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-read.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-read.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-server.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-simFailure.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-simulator.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-utils.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/.travis.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-encode.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-errors.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-global.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-init.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-layout.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-read.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-recover.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-scaling.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-simFailure.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-update.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/DurantVivado/Grasure/erasure-utils.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-node.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -192,7 +157,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>190</line>
+          <line>149</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>

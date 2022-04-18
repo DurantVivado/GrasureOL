@@ -9,9 +9,11 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"io"
 	"math/rand"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -295,10 +297,50 @@ func copyFile(srcFile, destFile string) (int64, error) {
 //generate random uuid
 // fix id = 0 as the cluster id
 // id > 1 as the node id
-func genUUID(id int64) string{
+func genUUID(id int64) int64{
 	node,err := snowflake.NewNode(id)
 	if err != nil{
 		xlog.Errorf("gen uuid failed", err)
 	}
-	return node.Generate().String()
+
+	return node.Generate().Int64()
+}
+
+type Int64Arr []int64
+func (arr Int64Arr) Less(i,j int) bool{
+	return arr[i] < arr[j]
+}
+func (arr Int64Arr) Swap(i,j int){
+	arr[i], arr[j] = arr[j], arr[i]
+}
+func (arr Int64Arr) Len() int{
+	return len(arr)
+}
+
+func sortInt64(arr []int64){
+	sort.Sort(Int64Arr(arr))
+}
+
+func isMyself(addr string) bool{
+	netInterfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Println("net.Interfaces failed, err:", err.Error())
+	}
+
+	for i := 0; i < len(netInterfaces); i++ {
+		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
+			addrs, _ := netInterfaces[i].Addrs()
+
+			for _, address := range addrs {
+				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						if ipnet.IP.String() == addr{
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }

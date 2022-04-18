@@ -17,9 +17,9 @@ type ConsistentHash struct {
 	hashMap  map[int]string //store nodes
 }
 
-//New creates a Map instance
+//NewConsistentHash creates a Map instance
 // hash func defaults to crc32
-func New(replicas int, fn Hash) *ConsistentHash {
+func NewConsistentHash(replicas int, fn Hash) *ConsistentHash {
 	m := &ConsistentHash{hash: fn, replicas: replicas, hashMap: make(map[int]string)}
 	if m.hash == nil {
 		m.hash = crc32.ChecksumIEEE

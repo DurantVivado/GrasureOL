@@ -49,13 +49,20 @@ var (
 //log alias
 var (
 	Println  = normalLog.Println
+	Print  = normalLog.Print
 	Printf = normalLog.Printf
+
 	Errorln  = errorLog.Println
+	Error  = errorLog.Print
 	Errorf = errorLog.Printf
+
 	Infoln   = infoLog.Println
 	Infof  = infoLog.Printf
+	Info  = infoLog.Print
+
 	Fatalln  = fatalLog.Fatalln
 	Fatalf = fatalLog.Fatalf
+	Fatal = fatalLog.Fatal
 )
 
 //log levels
