@@ -121,7 +121,7 @@ func NewCluster(usedNodeNum int, hashfn Hash) *Cluster {
 //AddNode adds a node into cluster using ConsistentHashAlgorithm
 func (c* Cluster) AddNode(uuid int64, node *Node){
 	for i := 0; i < c.virtualNum; i++ {
-		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + string(uuid))))
+		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + strconv.FormatInt(uuid, 10))))
 		c.nodeList = append(c.nodeList, hashVal)
 	}
 	c.nodeMap[uuid] = node
