@@ -2,7 +2,9 @@ package grasure
 
 import (
 	"bufio"
+	"context"
 	"github.com/DurantVivado/GrasureOL/xlog"
+	"golang.org/x/sync/errgroup"
 	"hash/crc32"
 	"io"
 	"net"
@@ -10,12 +12,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
 	defaultInfoFilePath = "cluster.info"
 	defaultNodeFilePath = "examples/nodes.addr"
 	defaultVirtualNum = 3
+
+	defaultPort = ":8888"
 )
 
 type Mode string
@@ -128,14 +133,36 @@ func (c* Cluster) AddNode(uuid int64, node *Node){
 	sortInt64(c.nodeList)
 }
 
+
+//GetIPsFromRole returns IP address according to given role
+func (c *Cluster) GetIPsFromRole(role string) (addrs []string){
+
+	for _,node := range c.nodeMap{
+		if node.isRole(role){
+			addrs = append(addrs, node.addr)
+		}
+	}
+	return
+}
+
+//GetNodesFromRole returns Node slice according to given role
+func (c *Cluster) GetNodesFromRole(role string) (nodes []*Node){
+	for _,node := range c.nodeMap{
+		if node.isRole(role){
+			nodes = append(nodes, node)
+		}
+	}
+	return
+}
+
 //ReadNodesAddr reads the node information from file
-func (c* Cluster) ReadNodesAddr() error{
+func (c* Cluster) ReadNodesAddr(){
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	//parse the node_addr file
 	f, err := os.Open(c.NodeFilePath)
 	if err != nil {
-		return err
+		xlog.Error(err)
 	}
 	defer f.Close()
 	buf := bufio.NewReader(f)
@@ -147,10 +174,10 @@ func (c* Cluster) ReadNodesAddr() error{
 			break
 		}
 		if err != nil {
-			return err
+			xlog.Error(err)
 		}
 		lineStr := string(line)
-		if strings.HasPrefix(lineStr, "//"){
+		if len(lineStr) == 0 || strings.HasPrefix(lineStr, "//"){
 			continue
 		}
 		lineArr := strings.Split(lineStr, " ")
@@ -162,7 +189,7 @@ func (c* Cluster) ReadNodesAddr() error{
 
 		node, err := NewNode(id, addr, NodeType(nodeTyp))
 		if err != nil{
-			return err
+			xlog.Error(err)
 		}
 		if id <= int64(c.usedNodeNum) {
 			c.AddNode(node.uid, node)
@@ -170,21 +197,42 @@ func (c* Cluster) ReadNodesAddr() error{
 		c.nodeList = append(c.nodeList, node.uid)
 		id++
 	}
-	return nil
 }
 
+
+func connectNode(ctx context.Context, addr string)error{
+	for {
+		select {
+		default:
+			l, err := net.Listen("tcp", addr)
+			if err != nil {
+				return err
+			}
+			defer l.Close()
+			conn, err := l.Accept()
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
 //ConnectNodes connect to all nodes and if successful, return nil
 func(c *Cluster) ConnectNodes(port string){
 	//Every node must connect to other nodes to testify connection
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	errgrp := new(errgroup.Group)
 	for _, node := range c.nodeMap{
-		if isMyself(node.addr){
-			continue
-		}
-		conn, err := net.Dial("tcp", node.addr+port)
-		if err != nil{
-			xlog.Errorln("connect to %s failed with:", node.addr, err)
-		}
-		node.conn = &conn
+		errgrp.Go(func() error{
+			return connectNode(ctx, node.addr)
+		})
+	}
+	if err := errgrp.Wait(); err != nil{
+		xlog.Error(err)
 	}
 	xlog.Infoln("all nodes successfully connected")
 }

@@ -1,11 +1,10 @@
 //demo: ip_address[xxx.xxx.xxx.xxx] role["client","name","computing","data"]
 192.168.58.133 gateway
 192.168.58.131 name,computing
-192.168.58.138 data
+192.168.58.128 data
 192.168.58.139 data
 192.168.58.140 data
 192.168.58.141 data
 192.168.58.142 data
 192.168.58.143 data
 192.168.58.145 data
-

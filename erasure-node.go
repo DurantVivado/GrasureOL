@@ -5,10 +5,12 @@
 package grasure
 
 import (
+	"context"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"github.com/DurantVivado/reedsolomon"
 	"net"
 	"strings"
+	"time"
 )
 
 type NodeType int16
@@ -32,6 +34,7 @@ func getType(role string) int16{
 	return 0
 }
 
+
 //A node may function as multiple types
 //low  |  1	 |   1	 | 	   1 	| 	 1	 |  1  |  1  | high
 //Type:Client, Server, Computing, Gateway, Data, Name
@@ -45,13 +48,13 @@ const (
 	//Add new kind of node here
 )
 
-type NodeHealth string
+type NodeStat string
 
 const (
-	HealthOK NodeHealth = "HealthOK"
-	CPUFailed NodeHealth = "CPUFailed"
-	DiskFailed NodeHealth = "DiskFailed"
-	NetworkError NodeHealth = "NetworkError"
+	HealthOK NodeStat = "HealthOK"
+	CPUFailed NodeStat = "CPUFailed"
+	DiskFailed NodeStat = "DiskFailed"
+	NetworkError NodeStat = "NetworkError"
 )
 
 type Node struct {
@@ -62,7 +65,7 @@ type Node struct {
 
 	nodeType NodeType
 
-	health NodeHealth
+	stat NodeStat
 
 	conn *net.Conn
 
@@ -109,6 +112,7 @@ type Node struct {
 	//// the path of file recording all disks path
 	//DiskFilePath string `json:"-"`
 
+	ctx context.Context
 }
 
 func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
@@ -120,10 +124,38 @@ func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
 		uid:          genUUID(id),
 		addr:         addr,
 		nodeType:     nodeType,
-		health:       HealthOK,
+		stat: NetworkError,
 	}
+
 	return newnode, nil
 
+}
+
+func(n *Node) isRole(role string) bool{
+	nT := int16(n.nodeType)
+	return nT & getType(role) == 1
+}
+
+var prevStat NodeStat
+
+
+func (n* Node) testConnectToCluster(targetAddr, port string, duration time.Duration){
+	timer := time.NewTimer(duration)
+	for {
+		select {
+		case <-timer.C:
+			conn, err := net.Dial("tcp", targetAddr+port)
+			if err != nil {
+				prevStat = n.stat
+				n.stat = NetworkError
+				xlog.Error(err)
+			}
+			n.stat = prevStat
+			conn.Close()
+		case <-n.ctx.Done():
+			return
+		}
+	}
 }
 
 //diskInfo contains the disk-level information

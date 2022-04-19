@@ -5,11 +5,14 @@ import (
 	"testing"
 )
 
-func TestErasure_ReadNodeDir(t *testing.T){
+func TestCluster_ReadNodeDir(t *testing.T){
 	c := NewCluster(3, nil)
-	err := c.ReadNodesAddr()
-	if err != nil {
-		t.Error(err)
-	}
-	log.Println("TestErasure_ReadNodeDir OK")
+	c.ReadNodesAddr()
+	log.Println("TestCluster_ReadNodeDir OK")
+}
+
+func TestCluster_ConnectNodes(t *testing.T) {
+	c := NewCluster(3, nil)
+	c.ReadNodesAddr()
+	c.ConnectNodes(":8888")
 }
