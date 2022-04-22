@@ -3,6 +3,7 @@ package grasure
 import (
 	"log"
 	"testing"
+	"time"
 )
 
 func TestCluster_ReadNodeDir(t *testing.T){
@@ -14,5 +15,5 @@ func TestCluster_ReadNodeDir(t *testing.T){
 func TestCluster_ConnectNodes(t *testing.T) {
 	c := NewCluster(3, nil)
 	c.ReadNodesAddr()
-	c.ConnectNodes(":8888")
+	c.ConnectNodes(":9999", 100*time.Second)
 }

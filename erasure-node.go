@@ -133,7 +133,7 @@ func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
 
 func(n *Node) isRole(role string) bool{
 	nT := int16(n.nodeType)
-	return nT & getType(role) == 1
+	return (nT & getType(role)) != 0
 }
 
 var prevStat NodeStat

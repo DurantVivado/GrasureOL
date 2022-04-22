@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"github.com/DurantVivado/GrasureOL/xlog"
-	"golang.org/x/sync/errgroup"
 	"hash/crc32"
 	"io"
 	"net"
@@ -12,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,7 +20,7 @@ const (
 	defaultNodeFilePath = "examples/nodes.addr"
 	defaultVirtualNum = 3
 
-	defaultPort = ":8888"
+	defaultPort = ":9999"
 )
 
 type Mode string
@@ -71,6 +71,9 @@ type Cluster struct{
 
 	//usedNodeNum is the number of used nodes in given NodeFilePath
 	usedNodeNum int
+
+	//aliveNodeNum is the number of nodes connected to the server
+	aliveNodeNum int32
 
 	//pools are referred to as a specific group of erasure coding, in the form (codeType-K-M-BlockSize),
 	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.
@@ -200,41 +203,46 @@ func (c* Cluster) ReadNodesAddr(){
 }
 
 
-func connectNode(ctx context.Context, addr string)error{
+//Run listens on certain port and connects to the ServeFunc for specified node
+func (c *Cluster)checkNodes(ctx context.Context, port string){
+	l, err := net.Listen("tcp", port)
+	if err != nil{
+		xlog.Fatal(err)
+	}
+	xlog.Info("Server listening on:", port)
 	for {
-		select {
-		default:
-			l, err := net.Listen("tcp", addr)
-			if err != nil {
-				return err
+		conn, err := l.Accept()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				xlog.Errorf(ctx.Err().Error())
+				return
+			default:
+				continue
 			}
-			defer l.Close()
-			conn, err := l.Accept()
-			if err != nil {
-				return err
+		}
+		remoteAddr := conn.RemoteAddr().String()
+		for _,node := range c.nodeMap {
+			ipAddr := strings.Split(remoteAddr, ":")[0]
+			if ipAddr == node.addr {
+				atomic.AddInt32(&c.aliveNodeNum, 1)
+				xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
 			}
-			defer conn.Close()
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
+			if int(c.aliveNodeNum) == c.usedNodeNum {
+				xlog.Infoln("all nodes successfully connected")
+				conn.Close()
+				return
+			}
 		}
 	}
 }
 //ConnectNodes connect to all nodes and if successful, return nil
-func(c *Cluster) ConnectNodes(port string){
+func(c *Cluster) ConnectNodes(port string, expireDuration time.Duration){
 	//Every node must connect to other nodes to testify connection
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), expireDuration)
 	defer cancel()
-	errgrp := new(errgroup.Group)
-	for _, node := range c.nodeMap{
-		errgrp.Go(func() error{
-			return connectNode(ctx, node.addr)
-		})
-	}
-	if err := errgrp.Wait(); err != nil{
-		xlog.Error(err)
-	}
-	xlog.Infoln("all nodes successfully connected")
+	c.aliveNodeNum ++
+	c.checkNodes(ctx, port)
 }
 /*
 //reset the storage
