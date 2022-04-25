@@ -3,8 +3,19 @@ syntax = "proto3";
 package protobuf;
 option go_package = "./";
 
-message data {
-
+message  Header {
+  string serviceMethod = 1;
+  uint64 seq = 2;
+  string error = 3;
 }
 
+message BlockReadRequest {
+  string  address = 1;
+  uint64  offset = 3;
+  uint64  size = 4;
+}
 
+message BlockReadResponse {
+  string  msg = 1;
+  bytes data = 2;
+}
