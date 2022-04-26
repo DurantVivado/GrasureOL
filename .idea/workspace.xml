@@ -6,11 +6,25 @@
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codec/codec.go" beforeDir="false" afterPath="$PROJECT_DIR$/codec/codec.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codec/json.go" beforeDir="false" afterPath="$PROJECT_DIR$/codec/json.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-client.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-client.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-disk.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-disk.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-node.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure_cluster_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_cluster_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-pool.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-pool.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-read.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-read.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-server.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-server.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure_node_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_node_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/nodes.addr" beforeDir="false" afterPath="$PROJECT_DIR$/examples/nodes.addr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/AUTHORS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/CONTRIBUTORS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/PATENTS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/golang.org/x/sync/errgroup/errgroup.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,9 +42,6 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GoLibraries">
-    <option name="indexEntireGoPath" value="false" />
-  </component>
   <component name="ProjectId" id="27mMT9aeRkeEnAky3IWxHfKwyef" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -41,17 +52,20 @@
     <option name="showMembers" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="configurable..is.expanded" value="false" />
+    <property name="configurable.GoLibrariesConfigurable.is.expanded" value="true" />
     <property name="go.formatter.settings.were.checked" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
     <property name="go.vendoring.notification.had.been.shown" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../minio-master" />
-    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+    <property name="settings.editor.selected.configurable" value="go.vgo" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -128,6 +142,9 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+  </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
   </component>
@@ -156,7 +173,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>248</line>
+          <line>303</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -181,12 +198,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>223</line>
+          <line>260</line>
           <option name="timeStamp" value="22" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>214</line>
+          <line>251</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
       </breakpoints>

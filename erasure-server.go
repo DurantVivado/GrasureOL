@@ -12,7 +12,12 @@ import (
 	"sync"
 )
 
-const MagicNumber = 0x7fffffff
+
+const (
+	DEFAULT_MAGIC_NUMBER = 0x7fffffff
+	READ_MAGIC_NUMBER= 0xaaaaaaaa
+	WRITE_MAGIC_NUMBER= 0xbbbbbbbb
+)
 
 type Option struct {
 	MagicNumber int        // MagicNumber marks this's a geerpc request
@@ -20,14 +25,16 @@ type Option struct {
 }
 
 var DefaultOption = &Option{
-	MagicNumber: MagicNumber,
+	MagicNumber: DEFAULT_MAGIC_NUMBER,
 	CodecType:   codec.GobType,
 }
 
 
 //Server represents an RPC server.
 type Server struct{
-	
+	//serveNode is the node of server
+	serveNode *Node
+
 }
 
 // request stores all information of a call
@@ -69,10 +76,10 @@ func (s *Server) ServeConn(conn io.ReadWriteCloser) {
 		xlog.Errorln("rpc server: options error: ", err)
 		return
 	}
-	if opt.MagicNumber != MagicNumber {
-		xlog.Errorln("rpc server: invalid magic number %x", opt.MagicNumber)
-		return
-	}
+	//if opt.MagicNumber != MagicNumber {
+	//	xlog.Errorln("rpc server: invalid magic number %x", opt.MagicNumber)
+	//	return
+	//}
 	f := codec.NewCodecFuncMap[opt.CodecType]
 	if f == nil {
 		xlog.Errorln("rpc server: invalid codec type %s", opt.CodecType)
@@ -138,6 +145,7 @@ func (s *Server) sendResponse(cc codec.Codec, h *codec.Header, body interface{},
 	}
 }
 
+//handleRequest is an handler that deals with clients' requests
 func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
 	// TODO, should call registered rpc methods to get the right replyv
 	// day 1, just print argv and send a hello message

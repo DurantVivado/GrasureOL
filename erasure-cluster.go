@@ -3,6 +3,7 @@ package grasure
 import (
 	"bufio"
 	"context"
+	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"hash/crc32"
 	"io"
@@ -19,9 +20,25 @@ const (
 	defaultInfoFilePath = "cluster.info"
 	defaultNodeFilePath = "examples/nodes.addr"
 	defaultVirtualNum = 3
-
+	defaultReplicaNum = 3
+	defaultRedundancy = Erasure_RS
+	defaultHeartbeatDuration = 3*time.Second
 	defaultPort = ":9999"
 )
+
+type Redundancy string
+
+const (
+	Erasure_RS Redundancy = "Erasure_RS"
+	Erasure_XOR Redundancy = "Erasure_XOR"
+	Erasure_LRC Redundancy = "Erasure_LRC"
+	Replication Redundancy = "Replication"
+	None Redundancy = "None"
+)
+
+func(r Redundancy) String() string{
+	return string(r)
+}
 
 type Mode string
 
@@ -33,6 +50,9 @@ const (
 	ScaleMode Mode = "Scale"
 	PowerSaveMode Mode = "PowerSave"
 )
+func(m Mode) String() string{
+	return string(m)
+}
 
 type ClusterOption struct{
 	verbose bool
@@ -75,6 +95,9 @@ type Cluster struct{
 	//aliveNodeNum is the number of nodes connected to the server
 	aliveNodeNum int32
 
+	//redundancy is the redundancy policy adopted by the cluster
+	redundancy Redundancy
+
 	//pools are referred to as a specific group of erasure coding, in the form (codeType-K-M-BlockSize),
 	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.
 	pools []*ErasurePool
@@ -93,11 +116,13 @@ type Cluster struct{
 	options *ClusterOption `json:"-"`
 
 	mu sync.Mutex
+
+	ctx context.Context
 }
 
 
 //NewCluster initializes a Cluster with customized ataShards, parityShards, usedNodeNum, replicateFactor and blockSize
-func NewCluster(usedNodeNum int, hashfn Hash) *Cluster {
+func NewCluster(ctx context.Context,usedNodeNum int, hashfn Hash) *Cluster {
 	//err = e.resetSystem()
 	//if err != nil {
 	//	return err
@@ -116,12 +141,14 @@ func NewCluster(usedNodeNum int, hashfn Hash) *Cluster {
 		Total:           0,
 		hash: hashfn,
 		usedNodeNum: usedNodeNum,
+		redundancy: defaultRedundancy,
 		InfoFilePath:    defaultInfoFilePath,
 		NodeFilePath: 	 defaultNodeFilePath,
 		nodeMap: make(map[int64]*Node),
 		nodeList: make([]int64, 0),
 		virtualNum: defaultVirtualNum,
 		options: defaultClusterOption,
+		ctx: ctx,
 	}
 	return c
 }
@@ -156,6 +183,16 @@ func (c *Cluster) GetNodesFromRole(role string) (nodes []*Node){
 		}
 	}
 	return
+}
+
+//GetLocalNode returns the local node if exists in the cluster
+func (c *Cluster) GetLocalNode() *Node{
+	for _,node := range c.nodeMap{
+		if isMyself(node.addr){
+			return node
+		}
+	}
+	return nil
 }
 
 //ReadNodesAddr reads the node information from file
@@ -215,7 +252,7 @@ func (c *Cluster)checkNodes(ctx context.Context, port string){
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				xlog.Errorf(ctx.Err().Error())
+				xlog.Error(ctx.Err())
 				return
 			default:
 				continue
@@ -227,12 +264,15 @@ func (c *Cluster)checkNodes(ctx context.Context, port string){
 			if ipAddr == node.addr {
 				atomic.AddInt32(&c.aliveNodeNum, 1)
 				xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
+				node.stat = HealthOK
 			}
 			if int(c.aliveNodeNum) == c.usedNodeNum {
 				xlog.Infoln("all nodes successfully connected")
-				conn.Close()
+				//Start heartbeat listening on each node
+				go c.startHeartbeatMonitor(conn, defaultHeartbeatDuration)
 				return
 			}
+
 		}
 	}
 }
@@ -241,8 +281,64 @@ func(c *Cluster) ConnectNodes(port string, expireDuration time.Duration){
 	//Every node must connect to other nodes to testify connection
 	ctx, cancel := context.WithTimeout(context.Background(), expireDuration)
 	defer cancel()
-	c.aliveNodeNum ++
+	c.aliveNodeNum = 1 // the server itself
 	c.checkNodes(ctx, port)
+}
+
+//ServeClient responses to client's response on clientPort
+func (c* Cluster) ServeClient(ctx context.Context, clientPort string){
+	l, err := net.Listen("tcp", clientPort)
+	if err != nil{
+		xlog.Fatal(err)
+	}
+	xlog.Info("Server listening on:", clientPort)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				xlog.Errorf(ctx.Err().Error())
+				return
+			default:
+				continue
+			}
+		}
+		xlog.Infof("client:%s successfully connected", conn.RemoteAddr().String())
+		//
+	}
+
+}
+
+func (c *Cluster) startHeartbeatMonitor(conn net.Conn, duration time.Duration) {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			xlog.Info(c.ctx.Err())
+			return
+		case <-timer.C:
+			for _,node := range c.nodeMap {
+				if node.stat == NetworkError{
+					xlog.Errorf("node:%s is down!", node.addr)
+				}
+				node.stat = NetworkError
+			}
+		default:
+			cc := codec.NewJsonCodec(conn)
+			h := &codec.Header{}
+			if err := cc.ReadHeader(h); err != nil {
+				xlog.Fatal(err)
+			}
+			if h.ServiceMethod == "Node.HeartBeat" {
+				uid := int64(h.Seq)
+				if n, ok := c.nodeMap[uid]; ok {
+					n.stat = HealthOK
+					xlog.Info("receive heartbeat from", n.addr)
+				}
+			}
+		}
+	}
 }
 /*
 //reset the storage

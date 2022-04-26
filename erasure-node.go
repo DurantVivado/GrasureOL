@@ -6,8 +6,10 @@ package grasure
 
 import (
 	"context"
+	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"github.com/DurantVivado/reedsolomon"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -46,16 +48,23 @@ const (
 	DataNode
 	NameNode
 	//Add new kind of node here
+	TestNode
 )
 
 type NodeStat string
 
 const (
+	NodeInit NodeStat = "NodeInit"
 	HealthOK NodeStat = "HealthOK"
 	CPUFailed NodeStat = "CPUFailed"
 	DiskFailed NodeStat = "DiskFailed"
 	NetworkError NodeStat = "NetworkError"
 )
+
+//Options define the parameters for read and recover mode
+type Options struct {
+
+}
 
 type Node struct {
 
@@ -66,8 +75,6 @@ type Node struct {
 	nodeType NodeType
 
 	stat NodeStat
-
-	conn *net.Conn
 
 	//For storage node:
 	//a meta structure indicates the blocks belong to which file and index.
@@ -96,24 +103,37 @@ type Node struct {
 	// the replication factor for config file
 	ReplicateFactor int
 
-
-	// the data stripe size, equal to k*bs
-	dataStripeSize int64
-
-	// the data plus parity stripe size, equal to (k+m)*bs
-	allStripeSize int64
-
-	//// the disk number, only the first diskNum disks are used in diskPathFile
-	//DiskNum int `json:"diskNum"`
-	//
-	//// diskInfo lists
-	//diskInfos []*diskInfo
-	//
-	//// the path of file recording all disks path
-	//DiskFilePath string `json:"-"`
-
 	ctx context.Context
+	opt *Options
 }
+
+
+//StorageNode is a node that storages data and parity blocks
+type StorageNode struct {
+	Node
+
+	//whether data is re-encoded in the node
+	redundancy Redundancy
+
+	// the used disk number, only the first diskNum of disks are used in diskPathFile
+	usedDiskNum int `json:"diskNum"`
+
+	// diskInfo lists
+	diskInfos []*diskInfo
+
+	// the path of file recording all disks' path
+	// default to the project's root path
+	diskFilePath string `json:"-"`
+}
+
+//Namenode stores the meta data of cluster. There can be multiple
+//Namenode in the cluster.
+type Namenode struct{
+	Node
+
+}
+
+
 
 func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
 	if id < 1{
@@ -124,7 +144,7 @@ func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
 		uid:          genUUID(id),
 		addr:         addr,
 		nodeType:     nodeType,
-		stat: NetworkError,
+		stat: NodeInit,
 	}
 
 	return newnode, nil
@@ -138,8 +158,34 @@ func(n *Node) isRole(role string) bool{
 
 var prevStat NodeStat
 
-
-func (n* Node) testConnectToCluster(targetAddr, port string, duration time.Duration){
+//every several seconds, the node send heartbeats to the
+//server to notice its survival
+func (n *Node) sendHeartBeats(conn net.Conn, start time.Time){
+	defer conn.Close()
+	timer := time.NewTimer(defaultHeartbeatDuration)
+	for {
+		select {
+		case <-timer.C:
+			//we use RPC
+			cc := codec.NewJsonCodec(conn)
+			h := &codec.Header{
+				ServiceMethod: "Node.HeartBeat",
+				Seq: uint64(n.uid),
+			}
+			body := time.Since(start).String()
+			err := cc.Write(h, body)
+			if err != nil {
+				xlog.Fatal(err)
+			}
+		case <-n.ctx.Done():
+			xlog.Error(n.ctx.Err())
+			return
+		}
+	}
+}
+//A node connects to the cluster ConnectToCluster every duration time,
+//if successful, then launch the heartbeat RPCC server
+func (n* Node) ConnectToCluster(targetAddr, port string, duration time.Duration){
 	timer := time.NewTimer(duration)
 	for {
 		select {
@@ -149,91 +195,96 @@ func (n* Node) testConnectToCluster(targetAddr, port string, duration time.Durat
 				prevStat = n.stat
 				n.stat = NetworkError
 				xlog.Error(err)
+				continue
 			}
 			n.stat = prevStat
-			conn.Close()
+			//send heart beat and lasting time
+			go n.sendHeartBeats(conn, time.Now())
+			return
 		case <-n.ctx.Done():
 			return
 		}
 	}
 }
 
-//diskInfo contains the disk-level information
-//but not mechanical and electrical parameters
-type diskInfo struct {
-	//the disk path
-	diskPath string
+func (n *Node)handleRequests(conn io.ReadWriteCloser){
+	var cc = codec.NewGobCodec(conn)
+	h := &codec.Header{}
+	err := cc.ReadHeader(h)
+	if err != nil {
+		xlog.Fatal(err)
+	}
+	switch h.ServiceMethod {
+	case "Erasure.Read":
+		req := &BlockReadRequest{}
+		err = cc.ReadBody(req)
+		if err != nil {
+			xlog.Fatal(err)
+		}
+		//read local file
+	default:
 
-	//it's flag and when disk fails, it renders false.
-	available bool
-
-	//it tells how many blocks a disk holds
-	numBlocks int
-
-	//it's a disk with meta file?
-	ifMetaExist bool
-
-	//the capacity of a disk
-	capacity int64
-
+	}
 }
 
-
-
-
-
-//Options define the parameters for read and recover mode
-type Options struct {
-
+func(n* Node) ListenWorkPort(ctx context.Context, port string) {
+	l, err := net.Listen("tcp", port)
+	if err != nil {
+		return
+	}
+	xlog.Info("node listening on:", port)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				xlog.Errorf(ctx.Err().Error())
+				return
+			default:
+				xlog.Error(err)
+				continue
+			}
+		}
+		xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
+		go n.handleRequests(conn)
+	}
 }
 
+type BlockReadRequest struct{
+	Address string
+	Offset uint64
+	Size uint64
+}
 
+type BlockReadResponse struct{
+	Msg string
+	Data []byte
+}
 
-//global system-level variables
-var (
-	err error
-)
+//readFromNode read certain segment of data (fixed with offset and len in bytes)
+//from the other node using RPC, return the number of bytes read and an error
+func (n *Node) readFromNode(address string, offset,size uint64) ([]byte, error){
+	if size == 0{
+		return make([]byte,0), nil
+	}
+	req := &BlockReadRequest{
+		Address: address,
+		Offset: offset,
+		Size: size,
+	}
+	//send via RPC
+	client, err := Dial("tcp", address, &Option{
+		MagicNumber: READ_MAGIC_NUMBER,
+		CodecType: codec.JsonType,
+	})
+	if err != nil{
+		return nil, err
+	}
+	reply := &BlockReadResponse{}
+	if err := client.Call("Erasure.Read", req, &reply); err != nil {
+		return nil, err
+	}
+	xlog.Infoln("reply:", reply.Msg, reply.Data)
+	return reply.Data, nil
+}
 
-
-
-
-//ReadDiskPath reads the disk paths from diskFilePath.
-//There should be exactly ONE disk path at each line.
-//
-//This func can NOT be called concurrently.
-//func (n *Node) ReadDiskPath() error {
-//	e.mu.RLock()
-//	defer e.mu.RUnlock()
-//	f, err := os.Open(e.DiskFilePath)
-//	if err != nil {
-//		return err
-//	}
-//	defer f.Close()
-//	buf := bufio.NewReader(f)
-//	e.diskInfos = make([]*diskInfo, 0)
-//	for {
-//		line, _, err := buf.ReadLine()
-//		if err == io.EOF {
-//			break
-//		}
-//		if err != nil {
-//			return err
-//		}
-//		path := string(line)
-//		if ok, err := pathExist(path); !ok && err == nil {
-//			return &diskError{path, "disk path not exist"}
-//		} else if err != nil {
-//			return err
-//		}
-//		metaPath := filepath.Join(path, "META")
-//		flag := false
-//		if ok, err := pathExist(metaPath); ok && err == nil {
-//			flag = true
-//		} else if err != nil {
-//			return err
-//		}
-//		diskInfo := &diskInfo{diskPath: string(line), available: true, ifMetaExist: flag}
-//		e.diskInfos = append(e.diskInfos, diskInfo)
-//	}
-//	return nil
-//}

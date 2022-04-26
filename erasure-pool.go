@@ -27,6 +27,9 @@ type ErasurePool struct{
 	// the number of parity blocks in a stripe
 	M int `json:"parityShards"`
 
+	//the used node number for the pool
+	nodeNum int
+
 	// the block size. default to 4KiB
 	BlockSize int64 `json:"blockSize"`
 

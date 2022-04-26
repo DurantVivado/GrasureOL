@@ -1,23 +1,25 @@
 package grasure
 
 import (
+	"context"
 	"fmt"
-	"net"
 	"testing"
+	"time"
 )
 
 func TestNode_ConnectToCluster(t *testing.T) {
-	c := NewCluster(3, nil)
+	ctx,cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c := NewCluster(ctx, 3, nil)
 	c.ReadNodesAddr()
 	s := c.GetIPsFromRole("Server")
 	if len(s) == 0{
 		t.Fatal("No such role as server")
 	}
-	targetAddr := s[0] + defaultPort
-	conn, err := net.Dial("tcp",targetAddr)
-	if err != nil{
-		t.Fatal(err)
+	node := c.GetLocalNode()
+	if node == nil{
+		node, _ = NewNode(-9999, "127.0.0.1", TestNode)
 	}
-	defer conn.Close()
+	node.ConnectToCluster(s[0], defaultPort,3*time.Second)
 	fmt.Println("Successfully connect to the cluster")
 }

@@ -9,3 +9,4 @@ And a pretty-looking HTTP frontend.
 This project is governed by Durant Thorvalds since 13th, April, 2022.
 
 
+Our goal is to forge an atomic, simple-to-study, highly module-independant and integratable project.
