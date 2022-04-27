@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 )
 
 func TestNode_ConnectToCluster(t *testing.T) {
@@ -19,6 +18,6 @@ func TestNode_ConnectToCluster(t *testing.T) {
 	if node == nil{
 		node = NewNode(ctx, 999, "127.0.0.1", TestNode)
 	}
-	node.ConnectToCluster(s[0], defaultPort,3*time.Second)
+	node.ConnectToCluster(s[0], defaultPort,defaultHeartbeatDuration)
 	fmt.Println("Successfully connect to the cluster")
 }

@@ -6,16 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-ACL.go" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-ACL.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-errors.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-node.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-utils.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure_cluster_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_cluster_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure_node_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_node_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure_utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_utils_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/nodes.addr" beforeDir="false" afterPath="$PROJECT_DIR$/examples/nodes.addr" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xlog/xlog.go" beforeDir="false" afterPath="$PROJECT_DIR$/xlog/xlog.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xlog/xlog_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/xlog/xlog_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,7 +59,7 @@
       <recent name="$PROJECT_DIR$/consistent_hash" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL">
+  <component name="RunManager" selected="Go Test.TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL">
     <configuration name="TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
@@ -123,8 +118,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestGenUUID in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestColor in github.com/DurantVivado/GrasureOL/xlog" />
         <item itemvalue="Go Test.TestCluster_ReadNodeDir in github.com/DurantVivado/GrasureOL" />
@@ -166,12 +161,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>359</line>
+          <line>352</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure_cluster_test.go</url>
-          <line>12</line>
+          <line>11</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -180,54 +175,24 @@
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>307</line>
-          <option name="timeStamp" value="22" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>298</line>
-          <option name="timeStamp" value="23" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure_cluster_test.go</url>
-          <line>19</line>
-          <option name="timeStamp" value="26" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure_node_test.go</url>
-          <line>21</line>
+          <line>20</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure_node_test.go</url>
-          <line>12</line>
+          <line>11</line>
           <option name="timeStamp" value="32" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-node.go</url>
-          <line>193</line>
+          <line>186</line>
           <option name="timeStamp" value="33" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-node.go</url>
-          <line>215</line>
+          <line>195</line>
           <option name="timeStamp" value="34" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>383</line>
-          <option name="timeStamp" value="36" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>389</line>
-          <option name="timeStamp" value="38" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>326</line>
-          <option name="timeStamp" value="39" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

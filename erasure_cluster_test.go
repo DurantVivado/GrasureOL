@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"testing"
-	"time"
 )
 
 func TestCluster_ReadNodeDir(t *testing.T){
@@ -18,5 +17,5 @@ func TestCluster_ConnectNodes(t *testing.T) {
 	ctx,cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c := NewCluster(ctx, 2, nil)
-	c.ConnectNodes(defaultPort, 100*time.Second)
+	c.ConnectNodes(defaultPort, defaultNodeConnectExpireTime)
 }

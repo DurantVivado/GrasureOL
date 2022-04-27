@@ -23,6 +23,7 @@ const (
 	defaultReplicaNum        = 3
 	defaultRedundancy        = Erasure_RS
 	defaultHeartbeatDuration = 3 * time.Second
+	defaultNodeConnectExpireTime = 100 * time.Second
 	defaultPort              = ":9999"
 )
 
@@ -199,18 +200,18 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 		if c.usedNodeNum < 1 || c.usedNodeNum > len(c.nodeList) {
 			xlog.Fatal(errInvalidUsedNodeNum)
 		}
-		c.AssignUUID()
 	})
 	return c
 }
 
 //AddNode adds a node into cluster using ConsistentHashAlgorithm
-func (c *Cluster) AddNode(uuid int64, node *Node) {
+func (c *Cluster) AddNode(id int, node *Node) {
 	for i := 0; i < c.virtualNum; i++ {
-		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + strconv.FormatInt(uuid, 10))))
+		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + strconv.Itoa(id))))
 		c.virtualList = append(c.virtualList, hashVal)
 	}
-	c.nodeMap[uuid] = node
+	hashVal := int64(c.hash([]byte(strconv.Itoa(id))))
+	c.nodeMap[hashVal] = node
 	sortInt64(c.virtualList)
 }
 
@@ -258,7 +259,7 @@ func (c *Cluster) ReadNodesAddr() {
 	}
 	defer f.Close()
 	buf := bufio.NewReader(f)
-	id := int64(1)
+	id := 1
 
 	for {
 		line, _, err := buf.ReadLine()
@@ -279,8 +280,8 @@ func (c *Cluster) ReadNodesAddr() {
 			nodeTyp = nodeTyp | getType(role)
 		}
 		node := NewNode(c.ctx, id, addr, NodeType(nodeTyp))
-		if id <= int64(c.usedNodeNum) {
-			c.AddNode(node.uid, node)
+		if id <= c.usedNodeNum {
+			c.AddNode(id, node)
 		}
 		c.nodeList = append(c.nodeList, node)
 		id++
@@ -311,14 +312,6 @@ func (c *Cluster) checkNodes(ctx context.Context, port string) {
 			if ipAddr == node.addr {
 				atomic.AddInt32(&c.aliveNodeNum, 1)
 				xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
-				//send UUID to the node
-				cc := codec.NewJsonCodec(conn)
-				h := &codec.Header{
-					ServiceMethod: "Server.UUID",
-				}
-				if err := cc.Write(h, node.uid); err != nil{
-					xlog.Fatal(err)
-				}
 				node.stat = HealthOK
 			}
 			if int(c.aliveNodeNum) == c.usedNodeNum {
@@ -368,46 +361,35 @@ func (c *Cluster) ServeClient(ctx context.Context, clientPort string) {
 func (c *Cluster) startHeartBeatMonitor(conn net.Conn, duration time.Duration) {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
+	cc := codec.NewJsonCodec(conn)
+	h := &codec.Header{}
 	for {
-		select {
-		case <-c.ctx.Done():
-			xlog.Info(c.ctx.Err())
-			return
-		case <-timer.C:
-			for _, node := range c.nodeMap {
-				if node.stat == NetworkError {
-					xlog.Errorf("node:%s is down!", node.addr)
-				}
-				node.stat = NetworkError
-			}
-		default:
-			cc := codec.NewJsonCodec(conn)
-			h := &codec.Header{}
-			if err := cc.ReadHeader(h); err != nil {
-				xlog.Fatal(err)
-			}
-			if h.ServiceMethod == "Node.HeartBeat" {
-				uid := int64(h.Seq)
-				if n, ok := c.nodeMap[uid]; ok {
-					n.stat = HealthOK
-					xlog.Info("receive heartbeat from", n.addr)
-					h.ServiceMethod = "Server.HeartBeat"
-					if err := cc.Write(h, nil); err != nil {
-						xlog.Fatal(err)
+		if err := cc.ReadHeader(h); err != nil {
+			select {
+			case <-c.ctx.Done():
+				xlog.Info(c.ctx.Err())
+				return
+			case <-timer.C:
+				for _, node := range c.nodeMap {
+					if node.stat == NetworkError {
+						xlog.Errorf("node:%s is down!", node.addr)
 					}
+					node.stat = NetworkError
 				}
+			}
+
+		}
+		if h.ServiceMethod == "Node.HeartBeat" {
+			uid := int64(h.Seq)
+			if n, ok := c.nodeMap[uid]; ok {
+				n.stat = HealthOK
+				xlog.Info("receive heartbeat from ", n.addr)
 			}
 		}
+
 	}
 }
 
-func (c *Cluster) AssignUUID(){
-	if c.isServer{
-		for _, node := range c.nodeMap{
-			node.uid = genUUID(node.uid)
-		}
-	}
-}
 /*
 //reset the storage
 func (c *Cluster) reset() error {

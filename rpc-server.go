@@ -2,13 +2,14 @@ package grasure
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"io"
 	"log"
 	"net"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -32,8 +33,7 @@ var DefaultOption = &Option{
 
 //Server represents an RPC server.
 type Server struct{
-	//serveNode is the node of server
-	serveNode *Node
+	serviceMap sync.Map
 
 }
 
@@ -41,6 +41,8 @@ type Server struct{
 type request struct {
 	h            *codec.Header // header of request
 	argv, replyv reflect.Value // argv and replyv of request
+	mtype        *methodType
+	svc          *service
 }
 
 
@@ -130,9 +132,21 @@ func (s *Server) readRequest(cc codec.Codec) (*request, error) {
 		return nil, err
 	}
 	req := &request{h: h}
-	req.argv = reflect.New(reflect.TypeOf(""))
-	if err = cc.ReadBody(req.argv.Interface()); err != nil {
-		xlog.Errorln("rpc server: read argv err:", err)
+	req.svc, req.mtype, err = s.findService(h.ServiceMethod)
+	if err != nil {
+		return req, err
+	}
+	req.argv = req.mtype.newArgv()
+	req.replyv = req.mtype.newReplyv()
+
+	// make sure that argvi is a pointer, ReadBody need a pointer as parameter
+	argvi := req.argv.Interface()
+	if req.argv.Type().Kind() != reflect.Ptr {
+		argvi = req.argv.Addr().Interface()
+	}
+	if err = cc.ReadBody(argvi); err != nil {
+		log.Println("rpc server: read body err:", err)
+		return req, err
 	}
 	return req, nil
 }
@@ -145,15 +159,16 @@ func (s *Server) sendResponse(cc codec.Codec, h *codec.Header, body interface{},
 	}
 }
 
-//handleRequest is an handler that deals with clients' requests
+//handleRequest is a handler that deals with clients' requests
 func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
-	// TODO, should call registered rpc methods to get the right replyv
-	// day 1, just print argv and send a hello message
 	defer wg.Done()
-	log.Println(req.h, req.argv.Elem())
-	req.replyv = reflect.ValueOf(fmt.Sprintf("geerpc resp %d: %s", req.h.Seq, req.h.ServiceMethod))
-	s.sendResponse(cc, req.h, req.replyv.Interface(), sending)
-}
+	err := req.svc.call(req.mtype, req.argv, req.replyv)
+	if err != nil {
+		req.h.Error = err.Error()
+		s.sendResponse(cc, req.h, invalidRequest, sending)
+		return
+	}
+	s.sendResponse(cc, req.h, req.replyv.Interface(), sending)}
 
 func(s *Server) Start(network, addr string){
 	if addr == ":0"{
@@ -168,3 +183,34 @@ func(s *Server) Start(network, addr string){
 	s.Accept(l)
 }
 
+// Register publishes in the server the set of methods of the
+func (s *Server) Register(rcvr interface{}) error {
+	ns := newService(rcvr)
+	if _, dup := s.serviceMap.LoadOrStore(ns.name, ns); dup {
+		return errors.New("rpc: service already defined: " + ns.name)
+	}
+	return nil
+}
+
+// Register publishes the receiver's methods in the DefaultServer.
+func Register(rcvr interface{}) error { return DefaultServer.Register(rcvr) }
+
+func (s *Server) findService(serviceMethod string) (svc *service, mtype *methodType, err error) {
+	dot := strings.LastIndex(serviceMethod, ".")
+	if dot < 0 {
+		err = errors.New("rpc server: service/method request ill-formed: " + serviceMethod)
+		return
+	}
+	serviceName, methodName := serviceMethod[:dot], serviceMethod[dot+1:]
+	svci, ok := s.serviceMap.Load(serviceName)
+	if !ok {
+		err = errors.New("rpc server: can't find service " + serviceName)
+		return
+	}
+	svc = svci.(*service)
+	mtype = svc.method[methodName]
+	if mtype == nil {
+		err = errors.New("rpc server: can't find method " + methodName)
+	}
+	return
+}

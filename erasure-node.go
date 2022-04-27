@@ -11,6 +11,7 @@ import (
 	"github.com/DurantVivado/reedsolomon"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -128,10 +129,10 @@ type Namenode struct {
 	Node
 }
 
-func NewNode(ctx context.Context, id int64, addr string, nodeType NodeType) *Node {
+func NewNode(ctx context.Context, id int, addr string, nodeType NodeType) *Node {
 	//initialize various nodes w.r.t types
 	newnode := &Node{
-		uid:      id,
+		uid:      int64(c.hash([]byte(strconv.Itoa(id)))),
 		addr:     addr,
 		nodeType: nodeType,
 		ctx:      ctx,
@@ -168,14 +169,6 @@ func (n *Node) sendHeartBeats(conn net.Conn, start time.Time) {
 			if err != nil {
 				xlog.Fatal(err)
 			}
-			//if received response then set node as healthy
-			err = cc.ReadHeader(h)
-			if err != nil {
-				xlog.Fatal(err)
-			}
-			if h.ServiceMethod == "Server.HeartBeat" {
-				n.stat = HealthOK
-			}
 		case <-n.ctx.Done():
 			xlog.Error(n.ctx.Err())
 			return
@@ -199,19 +192,6 @@ func (n *Node) ConnectToCluster(targetAddr, port string, duration time.Duration)
 				continue
 			}
 			n.stat = prevStat
-			//Recv UUID
-			cc := codec.NewJsonCodec(conn)
-			h := &codec.Header{}
-			if err := cc.ReadHeader(h);err != nil {
-				xlog.Fatal(err)
-			}
-			var uid int64
-			if err := cc.ReadBody(uid);err != nil {
-				xlog.Fatal(err)
-			}
-			if h.ServiceMethod == "Server.UUID"{
-				n.uid = uid
-			}
 			//send heart beat and lasting time
 			n.sendHeartBeats(conn, time.Now())
 			return
