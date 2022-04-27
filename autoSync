@@ -1,0 +1,53 @@
+#!/bin/bash
+#1 obtain the number of input parameters, if none then quit
+user=grasure
+hosts=(192.168.58.129 192.168.58.130 192.168.58.134 192.168.58.135)
+pcount=$#
+if (($pcount != 1)) && (($pcount != 2))
+then 
+	echo usage:./autoSync localPath {remotePath}
+	echo remotePath defaults to localPath if unset;
+	exit;
+fi
+
+
+#2 obatin the name of files
+localPath=$1
+if (($pcount == 2))
+then
+	remotePath=$2
+else
+	remotePath=$1
+fi
+
+
+if [ ! -f $localPath ] && [ ! -d $localPath ]; then
+	echo local_path is illegal
+	exit
+fi
+
+if [ ! -f $remotePath ] && [ ! -d $remotePath ]; then
+	echo remote_path is illegal
+	exit
+fi
+
+#ifname=`basename $localPath`
+#echo fname=$fname;
+
+
+#3 acquire the absolute path of the parent directory 
+#pdir=`cd -P $(dirname $localPath); pwd`
+#echo pdir=$pdir
+
+#4 get current login account, change the belowing when needed
+
+#5 concurrent
+for host in ${hosts[@]}
+do
+	echo ---------autoSync $user@$host start------------
+	rsync -a --rsync-path="mkdir -p $remotePath && rsync" $localPath $user@${host}:$remotePath
+#	rsync -a $localPath $user@${host}:$remotePath
+
+	echo ---------autoSync $user@$host finish------------
+done
+

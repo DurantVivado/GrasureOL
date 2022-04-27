@@ -15,6 +15,10 @@ func (e *diskError) Error() string {
 }
 
 //Error definitions
+var errNoServerInCluster = errors.New("lack server node in cluster. Fail to start the cluster")
+
+var errInvalidUsedNodeNum = errors.New("the preset used node number is invalid")
+
 var errNodeIdLessThanOne = errors.New("the node id is less than 1,(0 for cluster)")
 
 var errInvalidShardNumber = errors.New("the erasure codes parameter is invalid")

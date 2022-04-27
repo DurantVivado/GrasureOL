@@ -1,19 +1,22 @@
 package grasure
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
 )
 
 func TestCluster_ReadNodeDir(t *testing.T){
-	c := NewCluster(3, nil)
-	c.ReadNodesAddr()
+	ctx,cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_ = NewCluster(ctx, 2, nil)
 	log.Println("TestCluster_ReadNodeDir OK")
 }
 
 func TestCluster_ConnectNodes(t *testing.T) {
-	c := NewCluster(3, nil)
-	c.ReadNodesAddr()
-	c.ConnectNodes(":9999", 100*time.Second)
+	ctx,cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c := NewCluster(ctx, 2, nil)
+	c.ConnectNodes(defaultPort, 100*time.Second)
 }

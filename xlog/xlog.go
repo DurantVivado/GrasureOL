@@ -41,6 +41,7 @@ var (
 	errorLog = log.New(os.Stdout, getPatternMono("[Error]", "red"), log.LstdFlags|log.Lshortfile)
 	infoLog  = log.New(os.Stdout, getPatternMono("[Info]", "blue"), log.LstdFlags|log.Lshortfile)
 	fatalLog = log.New(os.Stdout, getPatternMix("[Fatal]", "purple", "white"), log.LstdFlags|log.Lshortfile)
+	warnlLog = log.New(os.Stdout, getPatternMix("[Warning]", "yellow", "white"), log.LstdFlags|log.Lshortfile)
 
 	loggers = []*log.Logger{errorLog, infoLog, fatalLog}
 	mu      sync.Mutex
@@ -48,6 +49,11 @@ var (
 
 //log alias
 var (
+	Warn = warnlLog.Print
+	Warnln = warnlLog.Println
+	Warnf = warnlLog.Printf
+
+
 	Println  = normalLog.Println
 	Print  = normalLog.Print
 	Printf = normalLog.Printf

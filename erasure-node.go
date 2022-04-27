@@ -17,31 +17,30 @@ import (
 
 type NodeType int16
 
-func getType(role string) int16{
-	if strings.ToUpper(role) == "CLIENT"{
+func getType(role string) int16 {
+	if strings.ToUpper(role) == "CLIENT" {
 		return 1
-	}else if strings.ToUpper(role) == "SERVER"{
-		return 1<<1
-	}else if strings.ToUpper(role) == "COMPUTING"{
-		return 1<<2
-	}else if strings.ToUpper(role) == "GATEWAY"{
-		return 1<<3
-	}else if strings.ToUpper(role) == "DATA"{
-		return 1<<4
-	}else if strings.ToUpper(role) == "NAME"{
-		return 1<<5
-	}else{
+	} else if strings.ToUpper(role) == "SERVER" {
+		return 1 << 1
+	} else if strings.ToUpper(role) == "COMPUTING" {
+		return 1 << 2
+	} else if strings.ToUpper(role) == "GATEWAY" {
+		return 1 << 3
+	} else if strings.ToUpper(role) == "DATA" {
+		return 1 << 4
+	} else if strings.ToUpper(role) == "NAME" {
+		return 1 << 5
+	} else {
 		xlog.Errorf("NodeType Undefined")
 	}
 	return 0
 }
 
-
 //A node may function as multiple types
 //low  |  1	 |   1	 | 	   1 	| 	 1	 |  1  |  1  | high
 //Type:Client, Server, Computing, Gateway, Data, Name
 const (
-	ClientNode = 1<<iota
+	ClientNode = 1 << iota
 	ServerNode
 	ComputingNode
 	GateWayNode
@@ -54,20 +53,18 @@ const (
 type NodeStat string
 
 const (
-	NodeInit NodeStat = "NodeInit"
-	HealthOK NodeStat = "HealthOK"
-	CPUFailed NodeStat = "CPUFailed"
-	DiskFailed NodeStat = "DiskFailed"
+	NodeInit     NodeStat = "NodeInit"
+	HealthOK     NodeStat = "HealthOK"
+	CPUFailed    NodeStat = "CPUFailed"
+	DiskFailed   NodeStat = "DiskFailed"
 	NetworkError NodeStat = "NetworkError"
 )
 
 //Options define the parameters for read and recover mode
 type Options struct {
-
 }
 
 type Node struct {
-
 	uid int64
 
 	addr string
@@ -107,7 +104,6 @@ type Node struct {
 	opt *Options
 }
 
-
 //StorageNode is a node that storages data and parity blocks
 type StorageNode struct {
 	Node
@@ -128,30 +124,25 @@ type StorageNode struct {
 
 //Namenode stores the meta data of cluster. There can be multiple
 //Namenode in the cluster.
-type Namenode struct{
+type Namenode struct {
 	Node
-
 }
 
-
-
-func NewNode(id int64, addr string, nodeType NodeType) (*Node, error){
-	if id < 1{
-		return nil, errNodeIdLessThanOne
-	}
+func NewNode(ctx context.Context, id int64, addr string, nodeType NodeType) *Node {
 	//initialize various nodes w.r.t types
 	newnode := &Node{
-		uid:          genUUID(id),
-		addr:         addr,
-		nodeType:     nodeType,
-		stat: NodeInit,
+		uid:      id,
+		addr:     addr,
+		nodeType: nodeType,
+		ctx:      ctx,
+		stat:     NodeInit,
 	}
 
-	return newnode, nil
+	return newnode
 
 }
 
-func(n *Node) isRole(role string) bool{
+func (n *Node) isRole(role string) bool {
 	nT := int16(n.nodeType)
 	return (nT & getType(role)) != 0
 }
@@ -160,7 +151,7 @@ var prevStat NodeStat
 
 //every several seconds, the node send heartbeats to the
 //server to notice its survival
-func (n *Node) sendHeartBeats(conn net.Conn, start time.Time){
+func (n *Node) sendHeartBeats(conn net.Conn, start time.Time) {
 	defer conn.Close()
 	timer := time.NewTimer(defaultHeartbeatDuration)
 	for {
@@ -170,12 +161,20 @@ func (n *Node) sendHeartBeats(conn net.Conn, start time.Time){
 			cc := codec.NewJsonCodec(conn)
 			h := &codec.Header{
 				ServiceMethod: "Node.HeartBeat",
-				Seq: uint64(n.uid),
+				Seq:           uint64(n.uid),
 			}
 			body := time.Since(start).String()
 			err := cc.Write(h, body)
 			if err != nil {
 				xlog.Fatal(err)
+			}
+			//if received response then set node as healthy
+			err = cc.ReadHeader(h)
+			if err != nil {
+				xlog.Fatal(err)
+			}
+			if h.ServiceMethod == "Server.HeartBeat" {
+				n.stat = HealthOK
 			}
 		case <-n.ctx.Done():
 			xlog.Error(n.ctx.Err())
@@ -183,10 +182,12 @@ func (n *Node) sendHeartBeats(conn net.Conn, start time.Time){
 		}
 	}
 }
-//A node connects to the cluster ConnectToCluster every duration time,
-//if successful, then launch the heartbeat RPCC server
-func (n* Node) ConnectToCluster(targetAddr, port string, duration time.Duration){
+
+// ConnectToCluster connects to the cluster every duration time,
+//if successful, then launch the heartbeat RPC server
+func (n *Node) ConnectToCluster(targetAddr, port string, duration time.Duration) {
 	timer := time.NewTimer(duration)
+	defer timer.Stop()
 	for {
 		select {
 		case <-timer.C:
@@ -198,8 +199,21 @@ func (n* Node) ConnectToCluster(targetAddr, port string, duration time.Duration)
 				continue
 			}
 			n.stat = prevStat
+			//Recv UUID
+			cc := codec.NewJsonCodec(conn)
+			h := &codec.Header{}
+			if err := cc.ReadHeader(h);err != nil {
+				xlog.Fatal(err)
+			}
+			var uid int64
+			if err := cc.ReadBody(uid);err != nil {
+				xlog.Fatal(err)
+			}
+			if h.ServiceMethod == "Server.UUID"{
+				n.uid = uid
+			}
 			//send heart beat and lasting time
-			go n.sendHeartBeats(conn, time.Now())
+			n.sendHeartBeats(conn, time.Now())
 			return
 		case <-n.ctx.Done():
 			return
@@ -207,7 +221,7 @@ func (n* Node) ConnectToCluster(targetAddr, port string, duration time.Duration)
 	}
 }
 
-func (n *Node)handleRequests(conn io.ReadWriteCloser){
+func (n *Node) handleRequests(conn io.ReadWriteCloser) {
 	var cc = codec.NewGobCodec(conn)
 	h := &codec.Header{}
 	err := cc.ReadHeader(h)
@@ -227,7 +241,7 @@ func (n *Node)handleRequests(conn io.ReadWriteCloser){
 	}
 }
 
-func(n* Node) ListenWorkPort(ctx context.Context, port string) {
+func (n *Node) ListenWorkPort(ctx context.Context, port string) {
 	l, err := net.Listen("tcp", port)
 	if err != nil {
 		return
@@ -250,34 +264,34 @@ func(n* Node) ListenWorkPort(ctx context.Context, port string) {
 	}
 }
 
-type BlockReadRequest struct{
+type BlockReadRequest struct {
 	Address string
-	Offset uint64
-	Size uint64
+	Offset  uint64
+	Size    uint64
 }
 
-type BlockReadResponse struct{
-	Msg string
+type BlockReadResponse struct {
+	Msg  string
 	Data []byte
 }
 
 //readFromNode read certain segment of data (fixed with offset and len in bytes)
 //from the other node using RPC, return the number of bytes read and an error
-func (n *Node) readFromNode(address string, offset,size uint64) ([]byte, error){
-	if size == 0{
-		return make([]byte,0), nil
+func (n *Node) readFromNode(address string, offset, size uint64) ([]byte, error) {
+	if size == 0 {
+		return make([]byte, 0), nil
 	}
 	req := &BlockReadRequest{
 		Address: address,
-		Offset: offset,
-		Size: size,
+		Offset:  offset,
+		Size:    size,
 	}
 	//send via RPC
 	client, err := Dial("tcp", address, &Option{
 		MagicNumber: READ_MAGIC_NUMBER,
-		CodecType: codec.JsonType,
+		CodecType:   codec.JsonType,
 	})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	reply := &BlockReadResponse{}
@@ -287,4 +301,3 @@ func (n *Node) readFromNode(address string, offset,size uint64) ([]byte, error){
 	xlog.Infoln("reply:", reply.Msg, reply.Data)
 	return reply.Data, nil
 }
-

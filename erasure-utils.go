@@ -50,7 +50,7 @@ func (is *IntSet) Clear() {
 		return
 	}
 
-	for k, _ := range *is {
+	for k := range *is {
 		delete(*is, k)
 	}
 }
@@ -300,7 +300,7 @@ func copyFile(srcFile, destFile string) (int64, error) {
 func genUUID(id int64) int64{
 	node,err := snowflake.NewNode(id)
 	if err != nil{
-		xlog.Errorf("gen uuid failed", err)
+		xlog.Fatal("gen uuid failed", err)
 	}
 
 	return node.Generate().Int64()
@@ -321,7 +321,7 @@ func sortInt64(arr []int64){
 	sort.Sort(Int64Arr(arr))
 }
 
-func isMyself(addr string) bool{
+func getLocalAddr() (ret []string){
 	netInterfaces, err := net.Interfaces()
 	if err != nil {
 		fmt.Println("net.Interfaces failed, err:", err.Error())
@@ -334,35 +334,12 @@ func isMyself(addr string) bool{
 			for _, address := range addrs {
 				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 					if ipnet.IP.To4() != nil {
-						if ipnet.IP.String() == addr{
-							return true
-						}
+						addr := strings.Split(ipnet.IP.String(),"/")[0]
+						ret = append(ret, addr)
 					}
 				}
 			}
 		}
 	}
-	return false
-}
-
-//GetMyIP looks up the local address, since there are possibly several addresses return a string slice
-func GetMyIP() (ret []string){
-	netInterfaces, err := net.Interfaces()
-	if err != nil {
-		fmt.Println("net.Interfaces failed, err:", err.Error())
-	}
-	for i := 0; i < len(netInterfaces); i++ {
-		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
-			addrs, _ := netInterfaces[i].Addrs()
-
-			for _, address := range addrs {
-				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-					if ipnet.IP.To4() != nil {
-						ret = append(ret, ipnet.IP.String())
-					}
-				}
-			}
-		}
-	}
-	return ret
+	return
 }
