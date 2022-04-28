@@ -6,6 +6,8 @@ import (
 	"github.com/DurantVivado/GrasureOL/codec"
 	"log"
 	"net"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -13,11 +15,11 @@ import (
 )
 
 func TestClient_Call(t *testing.T) {
-	newServer := NewServer()
-	addr := ":8888"
-	go newServer.Start("tcp", addr)
+	addr := make(chan string)
+	var foo Foo
+	go startServer(addr, foo)
 
-	client, err := Dial("tcp", addr, &Option{
+	client, err := Dial("tcp", <-addr, &Option{
 		MagicNumber: 0x123456,
 		CodecType: codec.GobType,
 	})
@@ -28,6 +30,8 @@ func TestClient_Call(t *testing.T) {
 
 	time.Sleep(time.Second)
 	// send request & receive response
+	ctx, _ := context.WithCancel(context.Background())
+
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
@@ -35,7 +39,7 @@ func TestClient_Call(t *testing.T) {
 			defer wg.Done()
 			args := fmt.Sprintf("req %d", i)
 			var reply string
-			if err := client.Call(nil, "Foo.Sum", args, &reply); err != nil {
+			if err := client.Call(ctx, "Foo.Sum", args, &reply); err != nil {
 				log.Fatal("call Foo.Sum error:", err)
 			}
 			log.Println("reply:", reply)
@@ -93,4 +97,24 @@ func TestClient_CallWithTimeout(t *testing.T) {
 		err := client.Call(context.Background(), "Bar.Timeout", 1, &reply)
 		_assert(err != nil && strings.Contains(err.Error(), "handle timeout"), "expect a timeout error")
 	})
+}
+
+
+func TestXDial(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		ch := make(chan struct{})
+		addr := "/tmp/grasure.sock"
+		go func() {
+			_ = os.Remove(addr)
+			l, err := net.Listen("unix", addr)
+			if err != nil {
+				t.Fatal("failed to listen unix socket")
+			}
+			ch <- struct{}{}
+			Accept(l)
+		}()
+		<-ch
+		_, err := XDial("unix@" + addr)
+		_assert(err == nil, "failed to connect unix socket")
+	}
 }

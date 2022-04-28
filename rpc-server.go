@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
@@ -19,7 +20,6 @@ const (
 	DEFAULT_MAGIC_NUMBER     = 0x7fffffff
 	READ_MAGIC_NUMBER        = 0xaaaaaaaa
 	WRITE_MAGIC_NUMBER       = 0xbbbbbbbb
-	defaultConnectionTimeout = 10 * time.Second
 )
 
 type Option struct {
@@ -33,6 +33,7 @@ var DefaultOption = &Option{
 	MagicNumber:    DEFAULT_MAGIC_NUMBER,
 	CodecType:      codec.GobType,
 	ConnectTimeout: defaultConnectionTimeout,
+	HandleTimeout: defaultHandleTimeout,
 }
 
 //Server represents an RPC server.
@@ -193,18 +194,6 @@ func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex
 		<-sent
 	}}
 
-func (s *Server) Start(network, addr string) {
-	if addr == ":0" {
-		xlog.Errorln("Please don't set addr as :0, in this way an arbitrary port is picked")
-		return
-	}
-	l, err := net.Listen(network, addr)
-	if err != nil {
-		xlog.Fatalln("server network error:", err)
-	}
-	xlog.Infoln("start rpc server on :", l.Addr())
-	s.Accept(l)
-}
 
 // Register publishes in the server the set of methods of the
 func (s *Server) Register(rcvr interface{}) error {
@@ -236,4 +225,35 @@ func (s *Server) findService(serviceMethod string) (svc *service, mtype *methodT
 		err = errors.New("rpc server: can't find method " + methodName)
 	}
 	return
+}
+
+// ServeHTTP implements an http.Handler that answers RPC requests.
+func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "CONNECT" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = io.WriteString(w, "405 must CONNECT\n")
+		return
+	}
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		log.Print("rpc hijacking ", req.RemoteAddr, ": ", err.Error())
+		return
+	}
+	_, _ = io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
+	s.ServeConn(conn)
+}
+
+// HandleHTTP registers an HTTP handler for RPC messages on rpcPath.
+// It is still necessary to invoke http.Serve(), typically in a go statement.
+func (s *Server) HandleHTTP() {
+	http.Handle(defaultRPCPath, s)
+	http.Handle(defaultDebugPath, debugHTTP{s})
+	xlog.Infoln("rpc server debug path:", defaultDebugPath)
+}
+
+// HandleHTTP is a convenient approach for default server to register HTTP handlers
+func HandleHTTP() {
+	DefaultServer.HandleHTTP()
+
 }

@@ -5,7 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/restful-api.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc-debug.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc_http_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpc-client.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpc-server.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpc_client_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc_client_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/rpc_server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc_server_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -23,6 +30,14 @@
   <component name="GOROOT" url="file:///usr/local/go" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="ProjectId" id="27mMT9aeRkeEnAky3IWxHfKwyef" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
@@ -55,8 +70,8 @@
       <recent name="$PROJECT_DIR$/consistent_hash" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL">
-    <configuration name="TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.TestDialHTTP in github.com/DurantVivado/GrasureOL">
+    <configuration name="TestClient_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -64,10 +79,10 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestCluster_ConnectNodes\E$" />
+      <pattern value="^\QTestClient_Call\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestMethodType_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestClient_CallWithTimeout in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -75,10 +90,10 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestMethodType_Call\E$" />
+      <pattern value="^\QTestClient_CallWithTimeout\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestNewService in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestDialHTTP in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -86,10 +101,10 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestNewService\E$" />
+      <pattern value="^\QTestDialHTTP\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestServer_ServeConn in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -97,10 +112,10 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestNode_ConnectToCluster\E$" />
+      <pattern value="^\QTestServer_ServeConn\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestServer_Register in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestXDial in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -108,16 +123,16 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestServer_Register\E$" />
+      <pattern value="^\QTestXDial\E$" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestServer_Register in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestMethodType_Call in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestNewService in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestDialHTTP in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestXDial in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestClient_Call in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestClient_CallWithTimeout in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestServer_ServeConn in github.com/DurantVivado/GrasureOL" />
       </list>
     </recent_temporary>
   </component>
@@ -156,7 +171,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>352</line>
+          <line>357</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -188,6 +203,46 @@
           <url>file://$PROJECT_DIR$/erasure-node.go</url>
           <line>195</line>
           <option name="timeStamp" value="34" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
+          <line>96</line>
+          <option name="timeStamp" value="52" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc-server.go</url>
+          <line>133</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
+          <line>81</line>
+          <option name="timeStamp" value="55" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_server_test.go</url>
+          <line>76</line>
+          <option name="timeStamp" value="56" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
+          <line>104</line>
+          <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_http_test.go</url>
+          <line>43</line>
+          <option name="timeStamp" value="59" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_http_test.go</url>
+          <line>21</line>
+          <option name="timeStamp" value="60" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_http_test.go</url>
+          <line>26</line>
+          <option name="timeStamp" value="61" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

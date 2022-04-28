@@ -15,12 +15,13 @@ import (
 
 
 func TestServer_ServeConn(t *testing.T) {
-	newServer := NewServer()
-	addr := ":8888"
-	go newServer.Start("tcp", addr)
+	addr := make(chan string)
+	var foo Foo
+	go startServer(addr, foo)
+
 
 	// in fact, following code is like a simple geerpc client
-	conn, err := net.Dial("tcp", addr)
+	conn, err := net.Dial("tcp", <-addr)
 	if err != nil{
 		t.Fatal(err)
 	}

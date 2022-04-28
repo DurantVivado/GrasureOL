@@ -17,14 +17,19 @@ import (
 )
 
 const (
-	defaultInfoFilePath      = "cluster.info"
-	defaultNodeFilePath      = "examples/nodes.addr"
-	defaultVirtualNum        = 3
-	defaultReplicaNum        = 3
-	defaultRedundancy        = Erasure_RS
-	defaultHeartbeatDuration = 3 * time.Second
+	defaultInfoFilePath          = "cluster.info"
+	defaultNodeFilePath          = "examples/nodes.addr"
+	defaultVirtualNum            = 3
+	defaultReplicaNum            = 3
+	defaultRedundancy            = Erasure_RS
+	defaultHeartbeatDuration     = 3 * time.Second
 	defaultNodeConnectExpireTime = 100 * time.Second
-	defaultPort              = ":9999"
+	defaultPort                  = ":9999"
+	defaultConnectionTimeout     = 10 * time.Second
+	defaultHandleTimeout         = 0
+	connected        = "200 Connected to Grasure RPC"
+	defaultRPCPath   = "/_grasure_"
+	defaultDebugPath = "/debug/grasureRPC"
 )
 
 type Redundancy string
@@ -179,7 +184,7 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 		//read the nodes infos via reading NodeFilePath
 		c.ReadNodesAddr()
 		s := c.GetIPsFromRole("Server")
-		if len(s) == 0{
+		if len(s) == 0 {
 			xlog.Fatal(errNoServerInCluster)
 		}
 		for _, node := range c.nodeList {
