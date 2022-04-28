@@ -3,6 +3,7 @@ package grasure
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"io"
@@ -11,30 +12,32 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
-
 const (
-	DEFAULT_MAGIC_NUMBER = 0x7fffffff
-	READ_MAGIC_NUMBER= 0xaaaaaaaa
-	WRITE_MAGIC_NUMBER= 0xbbbbbbbb
+	DEFAULT_MAGIC_NUMBER     = 0x7fffffff
+	READ_MAGIC_NUMBER        = 0xaaaaaaaa
+	WRITE_MAGIC_NUMBER       = 0xbbbbbbbb
+	defaultConnectionTimeout = 10 * time.Second
 )
 
 type Option struct {
-	MagicNumber int        // MagicNumber marks this's a geerpc request
-	CodecType   codec.Type // client may choose different Codec to encode body
+	MagicNumber    int           // MagicNumber marks this's a geerpc request
+	CodecType      codec.Type    // client may choose different Codec to encode body
+	ConnectTimeout time.Duration // 0 means no limit
+	HandleTimeout  time.Duration
 }
 
 var DefaultOption = &Option{
-	MagicNumber: DEFAULT_MAGIC_NUMBER,
-	CodecType:   codec.GobType,
+	MagicNumber:    DEFAULT_MAGIC_NUMBER,
+	CodecType:      codec.GobType,
+	ConnectTimeout: defaultConnectionTimeout,
 }
 
-
 //Server represents an RPC server.
-type Server struct{
+type Server struct {
 	serviceMap sync.Map
-
 }
 
 // request stores all information of a call
@@ -45,8 +48,7 @@ type request struct {
 	svc          *service
 }
 
-
-func NewServer() *Server{
+func NewServer() *Server {
 	return &Server{}
 }
 
@@ -54,10 +56,10 @@ var DefaultServer = NewServer()
 
 // Accept accepts connections on the listener and serves requests
 // for each incoming connection.
-func(s *Server) Accept(lis net.Listener){
-	for{
+func (s *Server) Accept(lis net.Listener) {
+	for {
 		conn, err := lis.Accept()
-		if err != nil{
+		if err != nil {
 			xlog.Errorln("rpc server: accept error:", err)
 			return
 		}
@@ -68,6 +70,7 @@ func(s *Server) Accept(lis net.Listener){
 // Accept accepts connections on the listener and serves requests
 // for each incoming connection.
 func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
+
 // ServeConn runs the server on a single connection.
 // ServeConn blocks, serving the connection until the client hangs up.
 
@@ -87,31 +90,31 @@ func (s *Server) ServeConn(conn io.ReadWriteCloser) {
 		xlog.Errorln("rpc server: invalid codec type %s", opt.CodecType)
 		return
 	}
-	s.serveCodec(f(conn))
+	s.serveCodec(f(conn), &opt)
 }
 
 //invalidRequest is a placeholder for response argv when error occurs
-var invalidRequest = struct {}{}
+var invalidRequest = struct{}{}
 
 // ServeConn runs the server on a single connection.
 // ServeConn blocks, serving the connection until the client hangs up.
-func (s *Server) serveCodec( cc codec.Codec){
-	sending := new(sync.Mutex)
-	wg := new(sync.WaitGroup)
-	for{
+func (s *Server) serveCodec(cc codec.Codec, opt *Option) {
+	sending := new(sync.Mutex) // make sure to send a complete response
+	wg := new(sync.WaitGroup)  // wait until all request are handled
+	for {
 		req, err := s.readRequest(cc)
-		if err != nil{
-			if req == nil{
-				//if it turns out impossible to recover, then close the connection
-				break
+		if err != nil {
+			if req == nil {
+				break // it's not possible to recover, so close the connection
 			}
 			req.h.Error = err.Error()
 			s.sendResponse(cc, req.h, invalidRequest, sending)
 			continue
 		}
 		wg.Add(1)
-		go s.handleRequest(cc, req, sending, wg)
+		go s.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
 	}
+	wg.Wait()
 	_ = cc.Close()
 }
 
@@ -160,23 +163,43 @@ func (s *Server) sendResponse(cc codec.Codec, h *codec.Header, body interface{},
 }
 
 //handleRequest is a handler that deals with clients' requests
-func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
+func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
-	err := req.svc.call(req.mtype, req.argv, req.replyv)
-	if err != nil {
-		req.h.Error = err.Error()
-		s.sendResponse(cc, req.h, invalidRequest, sending)
+	called := make(chan struct{})
+	sent := make(chan struct{})
+	go func() {
+		err := req.svc.call(req.mtype, req.argv, req.replyv)
+		called <- struct{}{}
+		if err != nil {
+			req.h.Error = err.Error()
+			s.sendResponse(cc, req.h, invalidRequest, sending)
+			sent <- struct{}{}
+			return
+		}
+		s.sendResponse(cc, req.h, req.replyv.Interface(), sending)
+		sent <- struct{}{}
+	}()
+
+	if timeout == 0 {
+		<-called
+		<-sent
 		return
 	}
-	s.sendResponse(cc, req.h, req.replyv.Interface(), sending)}
+	select {
+	case <-time.After(timeout):
+		req.h.Error = fmt.Sprintf("rpc server: request handle timeout: expect within %s", timeout)
+		s.sendResponse(cc, req.h, invalidRequest, sending)
+	case <-called:
+		<-sent
+	}}
 
-func(s *Server) Start(network, addr string){
-	if addr == ":0"{
+func (s *Server) Start(network, addr string) {
+	if addr == ":0" {
 		xlog.Errorln("Please don't set addr as :0, in this way an arbitrary port is picked")
 		return
 	}
 	l, err := net.Listen(network, addr)
-	if err != nil{
+	if err != nil {
 		xlog.Fatalln("server network error:", err)
 	}
 	xlog.Infoln("start rpc server on :", l.Addr())

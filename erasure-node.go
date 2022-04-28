@@ -275,7 +275,7 @@ func (n *Node) readFromNode(address string, offset, size uint64) ([]byte, error)
 		return nil, err
 	}
 	reply := &BlockReadResponse{}
-	if err := client.Call("Erasure.Read", req, &reply); err != nil {
+	if err := client.Call(n.ctx, "Erasure.Read", req, &reply); err != nil {
 		return nil, err
 	}
 	xlog.Infoln("reply:", reply.Msg, reply.Data)

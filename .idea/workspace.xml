@@ -6,11 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-ACL.go" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-ACL.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure-node.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure_cluster_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_cluster_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/erasure_node_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_node_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpc_server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc_server_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,7 +67,7 @@
       <pattern value="^\QTestCluster_ConnectNodes\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestCluster_ReadNodeDir in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestMethodType_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -79,22 +75,10 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestCluster_ReadNodeDir\E$" />
+      <pattern value="^\QTestMethodType_Call\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestColor in github.com/DurantVivado/GrasureOL/xlog" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="GrasureOL" />
-      <working_directory value="$PROJECT_DIR$/xlog" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/DurantVivado/GrasureOL/xlog" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestColor\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestGenUUID in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestNewService in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -102,7 +86,7 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestGenUUID\E$" />
+      <pattern value="^\QTestNewService\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -116,13 +100,24 @@
       <pattern value="^\QTestNode_ConnectToCluster\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestServer_Register in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/DurantVivado/GrasureOL" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestServer_Register\E$" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Go Test.TestCluster_ConnectNodes in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestServer_Register in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestMethodType_Call in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestNewService in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestNode_ConnectToCluster in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestGenUUID in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestColor in github.com/DurantVivado/GrasureOL/xlog" />
-        <item itemvalue="Go Test.TestCluster_ReadNodeDir in github.com/DurantVivado/GrasureOL" />
       </list>
     </recent_temporary>
   </component>
@@ -145,17 +140,17 @@
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure_server_test.go</url>
+          <url>file://$PROJECT_DIR$/rpc_server_test.go</url>
           <line>14</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure_client_test.go</url>
+          <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
           <line>12</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/erasure_client_test.go</url>
+          <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
           <line>20</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
