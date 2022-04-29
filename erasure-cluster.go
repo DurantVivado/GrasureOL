@@ -27,9 +27,9 @@ const (
 	defaultPort                  = ":9999"
 	defaultConnectionTimeout     = 10 * time.Second
 	defaultHandleTimeout         = 0
-	connected        = "200 Connected to Grasure RPC"
-	defaultRPCPath   = "/_grasure_"
-	defaultDebugPath = "/debug/grasureRPC"
+	connected                    = "200 Connected to Grasure RPC"
+	defaultRPCPath               = "/grasure"
+	defaultDebugPath             = "/debug/grasureRPC"
 )
 
 type Redundancy string

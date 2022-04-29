@@ -5,15 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/restful-api.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc-debug.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc_http_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc-discovery.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc-registry.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc-xclient.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc_registry_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/rpc_xclient_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc-client.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc-server.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc_client_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc_client_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpc_server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc_server_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +68,7 @@
       <recent name="$PROJECT_DIR$/consistent_hash" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestDialHTTP in github.com/DurantVivado/GrasureOL">
+  <component name="RunManager" selected="Go Test.TestXClient_Call in github.com/DurantVivado/GrasureOL">
     <configuration name="TestClient_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
@@ -80,17 +78,6 @@
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
       <pattern value="^\QTestClient_Call\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestClient_CallWithTimeout in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="GrasureOL" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/DurantVivado/GrasureOL" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestClient_CallWithTimeout\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestDialHTTP in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -104,7 +91,7 @@
       <pattern value="^\QTestDialHTTP\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestServer_ServeConn in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRegistryHandleHTTP in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -112,7 +99,18 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestServer_ServeConn\E$" />
+      <pattern value="^\QTestRegistryHandleHTTP\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestXClient_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GrasureOL" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/DurantVivado/GrasureOL" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestXClient_Call\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestXDial in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -128,11 +126,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestXClient_Call in github.com/DurantVivado/GrasureOL" />
+        <item itemvalue="Go Test.TestRegistryHandleHTTP in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestDialHTTP in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestXDial in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestClient_Call in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestClient_CallWithTimeout in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestServer_ServeConn in github.com/DurantVivado/GrasureOL" />
       </list>
     </recent_temporary>
   </component>
@@ -210,11 +208,6 @@
           <option name="timeStamp" value="52" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/rpc-server.go</url>
-          <line>133</line>
-          <option name="timeStamp" value="53" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/rpc_client_test.go</url>
           <line>81</line>
           <option name="timeStamp" value="55" />
@@ -243,6 +236,46 @@
           <url>file://$PROJECT_DIR$/rpc_http_test.go</url>
           <line>26</line>
           <option name="timeStamp" value="61" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_registry_test.go</url>
+          <line>77</line>
+          <option name="timeStamp" value="71" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
+          <line>18</line>
+          <option name="timeStamp" value="72" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_registry_test.go</url>
+          <line>53</line>
+          <option name="timeStamp" value="73" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
+          <line>81</line>
+          <option name="timeStamp" value="74" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
+          <line>16</line>
+          <option name="timeStamp" value="75" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc-xclient.go</url>
+          <line>55</line>
+          <option name="timeStamp" value="76" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
+          <line>40</line>
+          <option name="timeStamp" value="77" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
+          <line>33</line>
+          <option name="timeStamp" value="78" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
