@@ -5,13 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ded701ba-3186-42e3-91db-da785630d21f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/rpc-discovery.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc-registry.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc-xclient.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc_registry_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rpc_xclient_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/erasure-cluster.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-cluster.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure-node.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure-node.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure_cluster_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_cluster_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/erasure_node_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/erasure_node_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/nodes.addr" beforeDir="false" afterPath="$PROJECT_DIR$/examples/nodes.addr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpc-registry.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpc-registry.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,8 +68,8 @@
       <recent name="$PROJECT_DIR$/consistent_hash" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestXClient_Call in github.com/DurantVivado/GrasureOL">
-    <configuration name="TestClient_Call in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.TestCluster_Registry in github.com/DurantVivado/GrasureOL">
+    <configuration name="TestCluster_Registry in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GrasureOL" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -77,7 +77,7 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestClient_Call\E$" />
+      <pattern value="^\QTestCluster_Registry\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestDialHTTP in github.com/DurantVivado/GrasureOL" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -126,11 +126,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestCluster_Registry in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestXClient_Call in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestRegistryHandleHTTP in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestDialHTTP in github.com/DurantVivado/GrasureOL" />
         <item itemvalue="Go Test.TestXDial in github.com/DurantVivado/GrasureOL" />
-        <item itemvalue="Go Test.TestClient_Call in github.com/DurantVivado/GrasureOL" />
       </list>
     </recent_temporary>
   </component>
@@ -169,12 +169,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure-cluster.go</url>
-          <line>357</line>
+          <line>364</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/erasure_cluster_test.go</url>
-          <line>11</line>
+          <line>12</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -276,6 +276,16 @@
           <url>file://$PROJECT_DIR$/rpc_xclient_test.go</url>
           <line>33</line>
           <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rpc-server.go</url>
+          <line>231</line>
+          <option name="timeStamp" value="79" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/erasure_cluster_test.go</url>
+          <line>24</line>
+          <option name="timeStamp" value="80" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

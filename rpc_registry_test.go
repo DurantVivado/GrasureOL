@@ -18,10 +18,11 @@ func startRegistry(wg *sync.WaitGroup) {
 
 func startRegistryServer(registryAddr string, wg *sync.WaitGroup) {
 	var foo Foo
-	l, _ := net.Listen("tcp", ":0")
+	l, _ := net.Listen("tcp", ":8888")
 	server := NewServer()
 	_ = server.Register(&foo)
-	Heartbeat(registryAddr, "tcp@"+l.Addr().String(), 0)
+	ctx, _ := context.WithCancel(context.Background())
+	Heartbeat(ctx, registryAddr, "localhost:8888", 2*time.Second)
 	wg.Done()
 	server.Accept(l)
 }
@@ -69,11 +70,11 @@ func TestRegistryHandleHTTP(t *testing.T) {
 
 	time.Sleep(time.Second)
 	wg.Add(2)
-	go startRegistryServer(registryAddr, &wg)
+	startRegistryServer(registryAddr, &wg)
 	go startRegistryServer(registryAddr, &wg)
 	wg.Wait()
 
-	//time.Sleep(time.Second)
+	time.Sleep(time.Second)
 	rcall(registryAddr)
 	rbroadcast(registryAddr)
 }

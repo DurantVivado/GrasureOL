@@ -3,17 +3,17 @@ package grasure
 import (
 	"bufio"
 	"context"
-	"github.com/DurantVivado/GrasureOL/codec"
-	"github.com/DurantVivado/GrasureOL/xlog"
 	"hash/crc32"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"github.com/DurantVivado/GrasureOL/xlog"
 )
 
 const (
@@ -63,7 +63,7 @@ func (m Mode) String() string {
 
 type ClusterOption struct {
 	verbose  bool
-	override int // 1:true, 0:false, 2:ABA (ask before action)
+	override int // 1:true, 0:false, default to 0
 }
 
 var defaultClusterOption = &ClusterOption{
@@ -92,6 +92,12 @@ type Cluster struct {
 
 	//is the local node the server node? Only server node gen uuid for other nodes.
 	isServer bool
+
+	//the server module of the current node
+	server *Server
+
+	//the client module of the current node
+	client *Client
 
 	//acl represents access control and database
 	acl *ACL
@@ -166,6 +172,8 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 			localAddr:    localAddr,
 			inCluster:    false,
 			isServer:     false,
+			server:       NewServer(),
+			client:       nil,
 			Used:         0,
 			Free:         0,
 			Total:        0,
@@ -293,106 +301,24 @@ func (c *Cluster) ReadNodesAddr() {
 	}
 }
 
-//Run listens on certain port and connects to the ServeFunc for specified node
-func (c *Cluster) checkNodes(ctx context.Context, port string) {
+//the server handle HTTP requests
+func (c *Cluster) StartServer(port string) {
+	c.server.HandleHTTP()
+
+	if err := http.ListenAndServe(port, c.server); err != nil {
+		xlog.Fatal(err)
+	}
+}
+
+//heartbeat enables nodes to send periodic message to server to monitor the node's health
+func (c *Cluster) heartbeatToServer(registry, port string, duration time.Duration, wg *sync.WaitGroup) {
 	l, err := net.Listen("tcp", port)
 	if err != nil {
 		xlog.Fatal(err)
 	}
-	xlog.Info("Server listening on:", port)
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				xlog.Error(ctx.Err())
-				return
-			default:
-				continue
-			}
-		}
-		remoteAddr := conn.RemoteAddr().String()
-		for _, node := range c.nodeMap {
-			ipAddr := strings.Split(remoteAddr, ":")[0]
-			if ipAddr == node.addr {
-				atomic.AddInt32(&c.aliveNodeNum, 1)
-				xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
-				node.stat = HealthOK
-			}
-			if int(c.aliveNodeNum) == c.usedNodeNum {
-				xlog.Infoln("all nodes successfully connected")
-				//Start heartbeat listening on each node
-				c.startHeartBeatMonitor(conn, defaultHeartbeatDuration)
-				return
-			}
-
-		}
-	}
-}
-
-//ConnectNodes connect to all nodes and if successful, return nil
-func (c *Cluster) ConnectNodes(port string, expireDuration time.Duration) {
-	//Every node must connect to other nodes to testify connection
-	ctx, cancel := context.WithTimeout(context.Background(), expireDuration)
-	defer cancel()
-	c.aliveNodeNum = 1 // the server itself
-	c.checkNodes(ctx, port)
-}
-
-//ServeClient responses to client's response on clientPort
-func (c *Cluster) ServeClient(ctx context.Context, clientPort string) {
-	l, err := net.Listen("tcp", clientPort)
-	if err != nil {
-		xlog.Fatal(err)
-	}
-	xlog.Info("Server listening on:", clientPort)
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				xlog.Errorf(ctx.Err().Error())
-				return
-			default:
-				continue
-			}
-		}
-		xlog.Infof("client:%s successfully connected", conn.RemoteAddr().String())
-		//
-	}
-
-}
-
-func (c *Cluster) startHeartBeatMonitor(conn net.Conn, duration time.Duration) {
-	timer := time.NewTimer(duration)
-	defer timer.Stop()
-	cc := codec.NewJsonCodec(conn)
-	h := &codec.Header{}
-	for {
-		if err := cc.ReadHeader(h); err != nil {
-			select {
-			case <-c.ctx.Done():
-				xlog.Info(c.ctx.Err())
-				return
-			case <-timer.C:
-				for _, node := range c.nodeMap {
-					if node.stat == NetworkError {
-						xlog.Errorf("node:%s is down!", node.addr)
-					}
-					node.stat = NetworkError
-				}
-			}
-
-		}
-		if h.ServiceMethod == "Node.HeartBeat" {
-			uid := int64(h.Seq)
-			if n, ok := c.nodeMap[uid]; ok {
-				n.stat = HealthOK
-				xlog.Info("receive heartbeat from ", n.addr)
-			}
-		}
-
-	}
+	Heartbeat(c.ctx, registry, port, duration)
+	wg.Done()
+	c.server.Accept(l)
 }
 
 /*

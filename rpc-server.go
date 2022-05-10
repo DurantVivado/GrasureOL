@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/DurantVivado/GrasureOL/codec"
-	"github.com/DurantVivado/GrasureOL/xlog"
 	"io"
 	"log"
 	"net"
@@ -14,12 +12,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/DurantVivado/GrasureOL/codec"
+	"github.com/DurantVivado/GrasureOL/xlog"
 )
 
 const (
-	DEFAULT_MAGIC_NUMBER     = 0x7fffffff
-	READ_MAGIC_NUMBER        = 0xaaaaaaaa
-	WRITE_MAGIC_NUMBER       = 0xbbbbbbbb
+	DEFAULT_MAGIC_NUMBER = 0x7fffffff
+	READ_MAGIC_NUMBER    = 0xaaaaaaaa
+	WRITE_MAGIC_NUMBER   = 0xbbbbbbbb
 )
 
 type Option struct {
@@ -33,7 +34,7 @@ var DefaultOption = &Option{
 	MagicNumber:    DEFAULT_MAGIC_NUMBER,
 	CodecType:      codec.GobType,
 	ConnectTimeout: defaultConnectionTimeout,
-	HandleTimeout: defaultHandleTimeout,
+	HandleTimeout:  defaultHandleTimeout,
 }
 
 //Server represents an RPC server.
@@ -192,8 +193,8 @@ func (s *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex
 		s.sendResponse(cc, req.h, invalidRequest, sending)
 	case <-called:
 		<-sent
-	}}
-
+	}
+}
 
 // Register publishes in the server the set of methods of the
 func (s *Server) Register(rcvr interface{}) error {
@@ -229,19 +230,24 @@ func (s *Server) findService(serviceMethod string) (svc *service, mtype *methodT
 
 // ServeHTTP implements an http.Handler that answers RPC requests.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "CONNECT" {
+	switch req.Method {
+	case "HEARTBEAT":
+		handleHeartbeat(w, req)
+	case "CONNECT":
+		conn, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			log.Print("rpc hijacking ", req.RemoteAddr, ": ", err.Error())
+			return
+		}
+		_, _ = io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
+		s.ServeConn(conn)
+	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_, _ = io.WriteString(w, "405 must CONNECT\n")
 		return
 	}
-	conn, _, err := w.(http.Hijacker).Hijack()
-	if err != nil {
-		log.Print("rpc hijacking ", req.RemoteAddr, ": ", err.Error())
-		return
-	}
-	_, _ = io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
-	s.ServeConn(conn)
+
 }
 
 // HandleHTTP registers an HTTP handler for RPC messages on rpcPath.
@@ -255,5 +261,4 @@ func (s *Server) HandleHTTP() {
 // HandleHTTP is a convenient approach for default server to register HTTP handlers
 func HandleHTTP() {
 	DefaultServer.HandleHTTP()
-
 }

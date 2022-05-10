@@ -6,14 +6,12 @@ package grasure
 
 import (
 	"context"
+	"strconv"
+	"strings"
+
 	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"github.com/DurantVivado/reedsolomon"
-	"io"
-	"net"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type NodeType int16
@@ -146,102 +144,6 @@ func NewNode(ctx context.Context, id int, addr string, nodeType NodeType) *Node 
 func (n *Node) isRole(role string) bool {
 	nT := int16(n.nodeType)
 	return (nT & getType(role)) != 0
-}
-
-var prevStat NodeStat
-
-//every several seconds, the node send heartbeats to the
-//server to notice its survival
-func (n *Node) sendHeartBeats(conn net.Conn, start time.Time) {
-	defer conn.Close()
-	timer := time.NewTimer(defaultHeartbeatDuration)
-	for {
-		select {
-		case <-timer.C:
-			//we use RPC
-			cc := codec.NewJsonCodec(conn)
-			h := &codec.Header{
-				ServiceMethod: "Node.HeartBeat",
-				Seq:           uint64(n.uid),
-			}
-			body := time.Since(start).String()
-			err := cc.Write(h, body)
-			if err != nil {
-				xlog.Fatal(err)
-			}
-		case <-n.ctx.Done():
-			xlog.Error(n.ctx.Err())
-			return
-		}
-	}
-}
-
-// ConnectToCluster connects to the cluster every duration time,
-//if successful, then launch the heartbeat RPC server
-func (n *Node) ConnectToCluster(targetAddr, port string, duration time.Duration) {
-	timer := time.NewTimer(duration)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			conn, err := net.Dial("tcp", targetAddr+port)
-			if err != nil {
-				prevStat = n.stat
-				n.stat = NetworkError
-				xlog.Error(err)
-				continue
-			}
-			n.stat = prevStat
-			//send heart beat and lasting time
-			n.sendHeartBeats(conn, time.Now())
-			return
-		case <-n.ctx.Done():
-			return
-		}
-	}
-}
-
-func (n *Node) handleRequests(conn io.ReadWriteCloser) {
-	var cc = codec.NewGobCodec(conn)
-	h := &codec.Header{}
-	err := cc.ReadHeader(h)
-	if err != nil {
-		xlog.Fatal(err)
-	}
-	switch h.ServiceMethod {
-	case "Erasure.Read":
-		req := &BlockReadRequest{}
-		err = cc.ReadBody(req)
-		if err != nil {
-			xlog.Fatal(err)
-		}
-		//read local file
-	default:
-
-	}
-}
-
-func (n *Node) ListenWorkPort(ctx context.Context, port string) {
-	l, err := net.Listen("tcp", port)
-	if err != nil {
-		return
-	}
-	xlog.Info("node listening on:", port)
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				xlog.Errorf(ctx.Err().Error())
-				return
-			default:
-				xlog.Error(err)
-				continue
-			}
-		}
-		xlog.Infof("node:%s successfully connected", conn.RemoteAddr().String())
-		go n.handleRequests(conn)
-	}
 }
 
 type BlockReadRequest struct {

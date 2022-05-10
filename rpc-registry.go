@@ -1,12 +1,15 @@
 package grasure
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/DurantVivado/GrasureOL/xlog"
 )
 
 // Registry is a simple register center, provide following functions.
@@ -24,7 +27,7 @@ type ServerItem struct {
 }
 
 const (
-	defaultRegistryPath           = "/grasure/registry"
+	defaultRegistryPath    = "/grasure/registry"
 	defaultRegistryTimeout = time.Minute * 5
 )
 
@@ -36,7 +39,7 @@ func NewRegistry(timeout time.Duration) *Registry {
 	}
 }
 
-var DefaultGeeRegister = NewRegistry(defaultRegistryTimeout)
+var DefaultRegister = NewRegistry(defaultRegistryTimeout)
 
 func (r *Registry) putServer(addr string) {
 	r.mu.Lock()
@@ -90,12 +93,12 @@ func (r *Registry) HandleHTTP(registryPath string) {
 }
 
 func RegistryHandleHTTP() {
-	DefaultGeeRegister.HandleHTTP(defaultRegistryPath)
+	DefaultRegister.HandleHTTP(defaultRegistryPath)
 }
 
 // Heartbeat send a heartbeat message every once in a while
 // it's a helper function for a server to register or send heartbeat
-func Heartbeat(registry, addr string, duration time.Duration) {
+func Heartbeat(ctx context.Context, registry, addr string, duration time.Duration) {
 	if duration == 0 {
 		// make sure there is enough time to send heart beat
 		// before it's removed from registry
@@ -106,19 +109,24 @@ func Heartbeat(registry, addr string, duration time.Duration) {
 	go func() {
 		t := time.NewTicker(duration)
 		for err == nil {
-			<-t.C
-			err = sendHeartbeat(registry, addr)
+			select {
+			case <-t.C:
+				err = sendHeartbeat(registry, addr)
+			case <-ctx.Done():
+				xlog.Error(ctx.Err())
+				return
+			}
 		}
 	}()
 }
 
 func sendHeartbeat(registry, addr string) error {
-	log.Println(addr, "send heart beat to registry", registry)
+	xlog.Infoln(addr, "send heart beat to registry", registry)
 	httpClient := &http.Client{}
-	req, _ := http.NewRequest("POST", registry, nil)
+	req, _ := http.NewRequest("HEARTBEAT", registry, nil)
 	req.Header.Set("X-Grasure-Server", addr)
 	if _, err := httpClient.Do(req); err != nil {
-		log.Println("rpc server: heart beat err:", err)
+		xlog.Fatalln("rpc server: heart beat err:", err)
 		return err
 	}
 	return nil
