@@ -1,23 +1,30 @@
 package grasure
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/DurantVivado/GrasureOL/xlog"
+)
 
 type EncodeType string
 
 const (
-	ReedSolomon EncodeType = "ReedSolomon"
-	XOR EncodeType = "XOR"
-	LRC EncodeType = "LRC"
+	RS      EncodeType = "RS"
+	XOR     EncodeType = "XOR"
+	LRC     EncodeType = "LRC"
 	Replica EncodeType = "Replica"
 )
 
-type erasurePoolOption struct {
+func (e EncodeType) String() string {
+	return string(e)
+}
 
+type erasurePoolOption struct {
 }
 
 var defaultErasurePoolOption = &erasurePoolOption{}
 
-type ErasurePool struct{
+type ErasurePool struct {
 	//the encodeType is how the files are encoded in this pool
 	encodeType EncodeType
 
@@ -34,9 +41,9 @@ type ErasurePool struct{
 	BlockSize int64 `json:"blockSize"`
 
 	//the nodes that belongs to the pool, by ID
-	nodeIds []int
+	nodes []*Node
 
-	//file map
+	//file map, it stores on meta server
 	fileMap sync.Map
 
 	// whether to override former files or directories, default to false
@@ -51,19 +58,19 @@ type ErasurePool struct{
 	options *erasurePoolOption
 }
 
-func NewErasurePool(encodeType string, dataShards, parityShards, usedNodeNum, replicateFactor int, blockSize int64) (*ErasurePool, error){
+//NewErasurePool news an erasurePool with designated dataShards, parityShards, nodeNum and blockSize,
+//When set nodeList as nil by default, the pool uses the first nodeNum nodes,
+//you can specify the nodes in the order of their ids (indexed from 0).
+func NewErasurePool(encodeType string, dataShards, parityShards, nodeNum int, blockSize int64, nodeList []int) *ErasurePool {
 	if dataShards <= 0 || parityShards <= 0 {
-		return nil, errInvalidShardNumber
+		xlog.Fatal(errInvalidShardNumber)
 	}
 	//The reedsolomon library only implements GF(2^8) and will be improved later
-	if dataShards + parityShards > 256 {
-		return nil, errMaxShardNum
+	if dataShards+parityShards > 256 {
+		xlog.Fatal(errMaxShardNum)
 	}
-	if dataShards + parityShards > usedNodeNum {
-		return nil, errNotEnoughNodeAvailable
-	}
-	if replicateFactor < 1 {
-		return nil, errInvalidReplicateFactor
+	if dataShards+parityShards > nodeNum {
+		xlog.Fatal(errNotEnoughNodeAvailable)
 	}
 
 	erasurePool := &ErasurePool{
@@ -74,6 +81,15 @@ func NewErasurePool(encodeType string, dataShards, parityShards, usedNodeNum, re
 		fileMap:      sync.Map{},
 		errgroupPool: sync.Pool{},
 		mu:           sync.RWMutex{},
+		nodeNum:      nodeNum,
 	}
-	return erasurePool, nil
+	if nodeList == nil {
+		//default
+		erasurePool.nodes = c.nodeList[:nodeNum]
+	} else {
+		for _, id := range nodeList {
+			erasurePool.nodes = append(erasurePool.nodes, c.nodeList[id])
+		}
+	}
+	return erasurePool
 }

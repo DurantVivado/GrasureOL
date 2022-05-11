@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DurantVivado/GrasureOL/codec"
 	"github.com/DurantVivado/GrasureOL/xlog"
 	"github.com/DurantVivado/reedsolomon"
 )
@@ -155,31 +154,4 @@ type BlockReadRequest struct {
 type BlockReadResponse struct {
 	Msg  string
 	Data []byte
-}
-
-//readFromNode read certain segment of data (fixed with offset and len in bytes)
-//from the other node using RPC, return the number of bytes read and an error
-func (n *Node) readFromNode(address string, offset, size uint64) ([]byte, error) {
-	if size == 0 {
-		return make([]byte, 0), nil
-	}
-	req := &BlockReadRequest{
-		Address: address,
-		Offset:  offset,
-		Size:    size,
-	}
-	//send via RPC
-	client, err := Dial("tcp", address, &Option{
-		MagicNumber: READ_MAGIC_NUMBER,
-		CodecType:   codec.JsonType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	reply := &BlockReadResponse{}
-	if err := client.Call(n.ctx, "Erasure.Read", req, &reply); err != nil {
-		return nil, err
-	}
-	xlog.Infoln("reply:", reply.Msg, reply.Data)
-	return reply.Data, nil
 }

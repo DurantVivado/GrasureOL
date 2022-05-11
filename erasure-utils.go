@@ -5,8 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"github.com/DurantVivado/GrasureOL/xlog"
-	"github.com/bwmarrin/snowflake"
 	"io"
 	"math/rand"
 	"net"
@@ -18,7 +16,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/DurantVivado/GrasureOL/xlog"
+	"github.com/bwmarrin/snowflake"
 )
+
+func toString(x interface{}) string {
+	return fmt.Sprintf("%v", x)
+}
 
 //A Go-version Set
 type IntSet map[int]struct{}
@@ -297,9 +302,9 @@ func copyFile(srcFile, destFile string) (int64, error) {
 //generate random uuid
 // fix id = 0 as the cluster id
 // id > 1 as the node id
-func genUUID(id int64) int64{
-	node,err := snowflake.NewNode(id)
-	if err != nil{
+func genUUID(id int64) int64 {
+	node, err := snowflake.NewNode(id)
+	if err != nil {
 		xlog.Fatal("gen uuid failed", err)
 	}
 
@@ -307,21 +312,22 @@ func genUUID(id int64) int64{
 }
 
 type Int64Arr []int64
-func (arr Int64Arr) Less(i,j int) bool{
+
+func (arr Int64Arr) Less(i, j int) bool {
 	return arr[i] < arr[j]
 }
-func (arr Int64Arr) Swap(i,j int){
+func (arr Int64Arr) Swap(i, j int) {
 	arr[i], arr[j] = arr[j], arr[i]
 }
-func (arr Int64Arr) Len() int{
+func (arr Int64Arr) Len() int {
 	return len(arr)
 }
 
-func sortInt64(arr []int64){
+func sortInt64(arr []int64) {
 	sort.Sort(Int64Arr(arr))
 }
 
-func getLocalAddr() (ret []string){
+func getLocalAddr() (ret []string) {
 	netInterfaces, err := net.Interfaces()
 	if err != nil {
 		fmt.Println("net.Interfaces failed, err:", err.Error())
@@ -334,7 +340,7 @@ func getLocalAddr() (ret []string){
 			for _, address := range addrs {
 				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 					if ipnet.IP.To4() != nil {
-						addr := strings.Split(ipnet.IP.String(),"/")[0]
+						addr := strings.Split(ipnet.IP.String(), "/")[0]
 						ret = append(ret, addr)
 					}
 				}

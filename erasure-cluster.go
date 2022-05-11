@@ -96,7 +96,7 @@ var once sync.Once
 //Cluster is an instance that is only created once at each node
 type Cluster struct {
 	//uuid is the global unique id of a cluster
-	uuid int64
+	uuid int64 `json:"uuid"`
 
 	//the mode on which the cluster operates
 	mode Mode
@@ -145,24 +145,24 @@ type Cluster struct {
 	aliveNodeNum int32
 
 	//redundancy is the redundancy policy adopted by the cluster
-	redundancy Redundancy
+	redundancy Redundancy `json:"redundancy"`
 
 	//pools are referred to as a specific group of erasure coding, in the form (codeType-K-M-BlockSize),
 	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.
-	pools []*ErasurePool
+	poolMap map[string]*ErasurePool `json:"pools"`
 
 	//Used, Free, Total are capacity-related parameters
-	Used  uint64
-	Free  uint64
-	Total uint64
+	Used  uint64 `json:"Used"`
+	Free  uint64 `json:"Free"`
+	Total uint64 `json:"Total"`
 
 	//InfoFilePath is the path of a textual file storing basic information of the cluster
-	InfoFilePath string `json:"-"`
+	InfoFilePath string
 
 	//NodeFilePath is the path of file includes all nodes address, provided by user
-	NodeFilePath string `json:"-"`
+	NodeFilePath string
 
-	options *ClusterOption `json:"-"`
+	options *ClusterOption
 
 	mu sync.Mutex
 
@@ -338,7 +338,7 @@ func (c *Cluster) ReadNodesAddr() {
 	}
 }
 
-//the server handle HTTP requests
+//StartServer starts the server to handle HTTP requests
 func (c *Cluster) StartServer(port string) {
 	c.server.HandleHTTP()
 	c.SetNodeStatus(2 * defaultHeartbeatDuration)
@@ -348,7 +348,7 @@ func (c *Cluster) StartServer(port string) {
 
 }
 
-//the server handle HTTP requests
+//SetNodeStatus reset nodes' status every duration
 func (c *Cluster) SetNodeStatus(duration time.Duration) {
 	//set the nodes as unconnected every interval
 	go func() {
@@ -387,247 +387,253 @@ func (c *Cluster) heartbeatToServer(registry, port string, duration time.Duratio
 	c.server.Accept(l)
 }
 
-/*
-//reset the storage
-func (c *Cluster) reset() error {
-
-	g := new(errgroup.Group)
-
-	for _, path := range e.diskInfos[:e.DiskNum] {
-		path := path
-		files, err := os.ReadDir(path.diskPath)
-		if err != nil {
-			return err
-		}
-		if len(files) == 0 {
-			continue
-		}
-		g.Go(func() error {
-			for _, file := range files {
-				err = os.RemoveAll(filepath.Join(path.diskPath, file.Name()))
-				if err != nil {
-					return err
-				}
-
-			}
-			return nil
-		})
+//AddErasurePool adds an erasure-pool to the cluster's poolMap
+//whose key should be like "RS-10-4-1024k", namely policy.
+func (c *Cluster) AddErasurePools(pool ...*ErasurePool) {
+	for _, p := range pool {
+		key := string(p.encodeType) + toString(p.K) + "-" + toString(p.M) + "-" + toString(p.BlockSize)
+		c.poolMap[key] = p
 	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	return nil
 }
+
+//reset the storage
+// func (c *Cluster) reset() error {
+
+// 	g := new(errgroup.Group)
+
+// 	for _, path := range e.diskInfos[:e.DiskNum] {
+// 		path := path
+// 		files, err := os.ReadDir(path.diskPath)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if len(files) == 0 {
+// 			continue
+// 		}
+// 		g.Go(func() error {
+// 			for _, file := range files {
+// 				err = os.RemoveAll(filepath.Join(path.diskPath, file.Name()))
+// 				if err != nil {
+// 					return err
+// 				}
+
+// 			}
+// 			return nil
+// 		})
+// 	}
+// 	if err := g.Wait(); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 //reset the system including config and data
-func (c *Cluster) resetSystem() error {
+// func (c *Cluster) resetSystem() error {
 
-	//in-memory meta reset
-	e.FileMeta = make([]*fileInfo, 0)
-	// for k := range e.fileMap {
-	// 	delete(e.fileMap, k)
-	// }
-	e.fileMap.Range(func(key, value interface{}) bool {
-		e.fileMap.Delete(key)
-		return true
-	})
-	err = e.WriteConfig()
-	if err != nil {
-		return err
-	}
-	//delete the data blocks under all diskPath
-	err = e.reset()
-	if err != nil {
-		return err
-	}
-	err = e.replicateConfig(e.ReplicateFactor)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 	//in-memory meta reset
+// 	e.FileMeta = make([]*fileInfo, 0)
+// 	// for k := range e.fileMap {
+// 	// 	delete(e.fileMap, k)
+// 	// }
+// 	e.fileMap.Range(func(key, value interface{}) bool {
+// 		e.fileMap.Delete(key)
+// 		return true
+// 	})
+// 	err = e.WriteConfig()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	//delete the data blocks under all diskPath
+// 	err = e.reset()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = e.replicateConfig(e.ReplicateFactor)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 //ReadConfig reads the config file during system warm-up.
 //
 //Calling it before actions like encode and read is a good habit.
-func (c *Cluster) ReadConfig() error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+// func (c *Cluster) ReadConfig() error {
+// 	e.mu.Lock()
+// 	defer e.mu.Unlock()
 
-	if ex, err := pathExist(e.ConfigFile); !ex && err == nil {
-		// we try to recover the config file from the storage system
-		// which renders the last chance to heal
-		err = e.rebuildConfig()
-		if err != nil {
-			return errConfFileNotExist
-		}
-	} else if err != nil {
-		return err
-	}
-	data, err := ioutil.ReadFile(e.ConfigFile)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(data, &e)
-	if err != nil {
-		//if json file is broken, we try to recover it
+// 	if ex, err := pathExist(e.ConfigFile); !ex && err == nil {
+// 		// we try to recover the config file from the storage system
+// 		// which renders the last chance to heal
+// 		err = e.rebuildConfig()
+// 		if err != nil {
+// 			return errConfFileNotExist
+// 		}
+// 	} else if err != nil {
+// 		return err
+// 	}
+// 	data, err := ioutil.ReadFile(e.ConfigFile)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = json.Unmarshal(data, &e)
+// 	if err != nil {
+// 		//if json file is broken, we try to recover it
 
-		err = e.rebuildConfig()
-		if err != nil {
-			return errConfFileNotExist
-		}
+// 		err = e.rebuildConfig()
+// 		if err != nil {
+// 			return errConfFileNotExist
+// 		}
 
-		data, err := ioutil.ReadFile(e.ConfigFile)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(data, &e)
-		if err != nil {
-			return err
-		}
-	}
-	//initialize the ReedSolomon Code
-	e.enc, err = reedsolomon.New(e.K, e.M,
-		reedsolomon.WithAutoGoroutines(int(e.BlockSize)),
-		reedsolomon.WithCauchyMatrix(),
-		reedsolomon.WithInversionCache(true),
-	)
-	if err != nil {
-		return err
-	}
-	e.dataStripeSize = int64(e.K) * e.BlockSize
-	e.allStripeSize = int64(e.K+e.M) * e.BlockSize
+// 		data, err := ioutil.ReadFile(e.ConfigFile)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		err = json.Unmarshal(data, &e)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	//initialize the ReedSolomon Code
+// 	e.enc, err = reedsolomon.New(e.K, e.M,
+// 		reedsolomon.WithAutoGoroutines(int(e.BlockSize)),
+// 		reedsolomon.WithCauchyMatrix(),
+// 		reedsolomon.WithInversionCache(true),
+// 	)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	e.dataStripeSize = int64(e.K) * e.BlockSize
+// 	e.allStripeSize = int64(e.K+e.M) * e.BlockSize
 
-	e.errgroupPool.New = func() interface{} {
-		return &errgroup.Group{}
-	}
-	//unzip the fileMap
-	for _, f := range e.FileMeta {
-		stripeNum := len(f.Distribution)
-		f.blockToOffset = makeArr2DInt(stripeNum, e.K+e.M)
-		f.blockInfos = make([][]*blockInfo, stripeNum)
-		countSum := make([]int, e.DiskNum)
-		for row := range f.Distribution {
-			f.blockInfos[row] = make([]*blockInfo, e.K+e.M)
-			for line := range f.Distribution[row] {
-				diskId := f.Distribution[row][line]
-				f.blockToOffset[row][line] = countSum[diskId]
-				f.blockInfos[row][line] = &blockInfo{bstat: blkOK}
-				countSum[diskId]++
-			}
-		}
-		//update the numBlocks
-		for i := range countSum {
-			e.diskInfos[i].numBlocks += countSum[i]
-		}
-		e.fileMap.Store(f.FileName, f)
-		// e.fileMap[f.FileName] = f
+// 	e.errgroupPool.New = func() interface{} {
+// 		return &errgroup.Group{}
+// 	}
+// 	//unzip the fileMap
+// 	for _, f := range e.FileMeta {
+// 		stripeNum := len(f.Distribution)
+// 		f.blockToOffset = makeArr2DInt(stripeNum, e.K+e.M)
+// 		f.blockInfos = make([][]*blockInfo, stripeNum)
+// 		countSum := make([]int, e.DiskNum)
+// 		for row := range f.Distribution {
+// 			f.blockInfos[row] = make([]*blockInfo, e.K+e.M)
+// 			for line := range f.Distribution[row] {
+// 				diskId := f.Distribution[row][line]
+// 				f.blockToOffset[row][line] = countSum[diskId]
+// 				f.blockInfos[row][line] = &blockInfo{bstat: blkOK}
+// 				countSum[diskId]++
+// 			}
+// 		}
+// 		//update the numBlocks
+// 		for i := range countSum {
+// 			e.diskInfos[i].numBlocks += countSum[i]
+// 		}
+// 		e.fileMap.Store(f.FileName, f)
+// 		// e.fileMap[f.FileName] = f
 
-	}
-	e.FileMeta = make([]*fileInfo, 0)
-	// we
-	//e.sEnc, err = reedsolomon.NewStreamC(e.K, e.M, conReads, conWrites)
-	// if err != nil {
-	// 	return err
-	// }
+// 	}
+// 	e.FileMeta = make([]*fileInfo, 0)
+// 	// we
+// 	//e.sEnc, err = reedsolomon.NewStreamC(e.K, e.M, conReads, conWrites)
+// 	// if err != nil {
+// 	// 	return err
+// 	// }
 
-	return nil
-}
+// 	return nil
+// }
 
 //Replicate the config file into the system for k-fold
 //it's NOT striped and encoded as a whole piece.
-func (c *Cluster) replicateConfig(k int) error {
-	selectDisk := genRandomArr(e.DiskNum, 0)[:k]
-	for _, i := range selectDisk {
-		disk := e.diskInfos[i]
-		disk.ifMetaExist = true
-		replicaPath := filepath.Join(disk.diskPath, "META")
-		_, err = copyFile(e.ConfigFile, replicaPath)
-		if err != nil {
-			log.Println(err.Error())
-		}
+// func (c *Cluster) replicateConfig(k int) error {
+// 	selectDisk := genRandomArr(e.DiskNum, 0)[:k]
+// 	for _, i := range selectDisk {
+// 		disk := e.diskInfos[i]
+// 		disk.ifMetaExist = true
+// 		replicaPath := filepath.Join(disk.diskPath, "META")
+// 		_, err = copyFile(e.ConfigFile, replicaPath)
+// 		if err != nil {
+// 			log.Println(err.Error())
+// 		}
 
-	}
-	return nil
-}
+// 	}
+// 	return nil
+// }
 
-//WriteConfig writes the erasure parameters and file information list into config files.
+//WriteConfig writes the cluster parameters and file information list into config files and transfer to other nodes
 //
 //Calling it after actions like encode and read is a good habit.
-func (c *Cluster) WriteConfig() error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+// func (c *Cluster) WriteConfig() error {
+// 	c.mu.Lock()
+// 	defer c.mu.Unlock()
 
-	f, err := os.OpenFile(e.ConfigFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+// 	f, err := os.OpenFile(c.InfoFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer f.Close()
 
-	// we marsh filemap into fileLists
-	// for _, v := range e.fileMap {
-	// 	e.FileMeta = append(e.FileMeta, v)
-	// }
-	e.fileMap.Range(func(k, v interface{}) bool {
-		e.FileMeta = append(e.FileMeta, v.(*fileInfo))
-		return true
-	})
-	data, err := json.Marshal(e)
-	// data, err := json.MarshalIndent(e, " ", "  ")
-	if err != nil {
-		return err
-	}
-	buf := bufio.NewWriter(f)
-	_, err = buf.Write(data)
-	if err != nil {
-		return err
-	}
-	buf.Flush()
-	// f.Sync()
-	err = e.updateConfigReplica()
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 	// we marsh filemap into fileLists
+// 	// for _, v := range e.fileMap {
+// 	// 	e.FileMeta = append(e.FileMeta, v)
+// 	// }
+// 	// e.fileMap.Range(func(k, v interface{}) bool {
+// 	// 	e.FileMeta = append(e.FileMeta, v.(*fileInfo))
+// 	// 	return true
+// 	// })
+// 	data, err := json.Marshal(c)
+// 	// data, err := json.MarshalIndent(e, " ", "  ")
+// 	if err != nil {
+// 		return err
+// 	}
+// 	buf := bufio.NewWriter(f)
+// 	_, err = buf.Write(data)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	buf.Flush()
+// 	// f.Sync()
+// 	err = c.updateConfigReplica()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 //reconstruct the config file if possible
-func (c *Cluster) rebuildConfig() error {
-	//we read file meta in the disk path and try to rebuild the config file
-	for i := range e.diskInfos[:e.DiskNum] {
-		disk := e.diskInfos[i]
-		replicaPath := filepath.Join(disk.diskPath, "META")
-		if ok, err := pathExist(replicaPath); !ok && err == nil {
-			continue
-		}
-		_, err = copyFile(replicaPath, e.ConfigFile)
-		if err != nil {
-			return err
-		}
-		break
-	}
-	return nil
-}
+// func (c *Cluster) rebuildConfig() error {
+// 	//we read file meta in the disk path and try to rebuild the config file
+// 	for i := range e.diskInfos[:e.DiskNum] {
+// 		disk := e.diskInfos[i]
+// 		replicaPath := filepath.Join(disk.diskPath, "META")
+// 		if ok, err := pathExist(replicaPath); !ok && err == nil {
+// 			continue
+// 		}
+// 		_, err = copyFile(replicaPath, e.ConfigFile)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		break
+// 	}
+// 	return nil
+// }
 
 //update the config file of all replica
-func (c *Cluster) updateConfigReplica() error {
+// func (c *Cluster) updateConfigReplica() error {
 
-	//we read file meta in the disk path and try to rebuild the config file
-	if e.ReplicateFactor < 1 {
-		return nil
-	}
-	for i := range e.diskInfos[:e.DiskNum] {
-		disk := e.diskInfos[i]
-		replicaPath := filepath.Join(disk.diskPath, "META")
-		if ok, err := pathExist(replicaPath); !ok && err == nil {
-			continue
-		}
-		_, err = copyFile(e.ConfigFile, replicaPath)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-*/
+// 	//we read file meta in the disk path and try to rebuild the config file
+// 	if e.ReplicateFactor < 1 {
+// 		return nil
+// 	}
+// 	for i := range e.diskInfos[:e.DiskNum] {
+// 		disk := e.diskInfos[i]
+// 		replicaPath := filepath.Join(disk.diskPath, "META")
+// 		if ok, err := pathExist(replicaPath); !ok && err == nil {
+// 			continue
+// 		}
+// 		_, err = copyFile(e.ConfigFile, replicaPath)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }

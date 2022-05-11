@@ -38,13 +38,13 @@ func getPatternMix(word, foreground, background string) string {
 
 var (
 	flag     = log.LstdFlags
-	debugLog = log.New(os.Stdout, getPatternMono("[Debug]", "white"), flag)
+	debugLog = log.New(os.Stdout, getPatternMono("[Debug]", "white"), flag|log.Lshortfile)
 	errorLog = log.New(os.Stdout, getPatternMono("[Error]", "red"), flag)
 	infoLog  = log.New(os.Stdout, getPatternMono("[Info]", "blue"), flag)
 	fatalLog = log.New(os.Stdout, getPatternMix("[Fatal]", "purple", "white"), flag)
 	warnlLog = log.New(os.Stdout, getPatternMix("[Warning]", "yellow", "white"), flag)
 
-	loggers = []*log.Logger{errorLog, infoLog, fatalLog}
+	loggers = []*log.Logger{errorLog, infoLog, fatalLog, debugLog, warnlLog}
 	mu      sync.Mutex
 )
 
