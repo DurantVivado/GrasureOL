@@ -14,6 +14,11 @@ type Context context.Context
 func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if int(c.aliveNodeNum) == c.usedNodeNum {
+		c.mode = NormalMode
+		xlog.Infoln("all nodes successfully connected")
+		return
+	}
 	remoteAddr := strings.Split(r.RemoteAddr, ":")[0]
 	//we set the node as alive
 	for _, node := range c.nodeMap {
@@ -24,10 +29,10 @@ func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 			node.stat = HealthOK
 		}
 		if int(c.aliveNodeNum) == c.usedNodeNum {
-			xlog.Infoln("all nodes successfully connected")
+			// xlog.Infoln("all nodes successfully connected")
 			return
 		}
 
 	}
-	xlog.Infoln("recv heartbeat from :", remoteAddr)
+	// xlog.Infoln("recv heartbeat from :", remoteAddr)
 }

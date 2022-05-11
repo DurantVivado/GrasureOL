@@ -113,7 +113,7 @@ func Heartbeat(ctx context.Context, registry, addr string, duration time.Duratio
 			case <-t.C:
 				err = sendHeartbeat(registry, addr)
 			case <-ctx.Done():
-				xlog.Error(ctx.Err())
+				// xlog.Error(ctx.Err())
 				return
 			}
 		}
@@ -121,7 +121,7 @@ func Heartbeat(ctx context.Context, registry, addr string, duration time.Duratio
 }
 
 func sendHeartbeat(registry, addr string) error {
-	xlog.Infoln(addr, "send heart beat to registry", registry)
+	// xlog.Infoln(addr, "send heart beat to registry", registry)
 	httpClient := &http.Client{}
 	req, _ := http.NewRequest("HEARTBEAT", registry, nil)
 	req.Header.Set("X-Grasure-Server", addr)

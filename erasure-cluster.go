@@ -5,6 +5,7 @@ import (
 	"context"
 	"hash/crc32"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -30,45 +31,61 @@ const (
 	connected                    = "200 Connected to Grasure RPC"
 	defaultRPCPath               = "/grasure"
 	defaultDebugPath             = "/debug/grasureRPC"
+	defaultLogLevel              = InfoLevel
+	defaultLogFile               = "grasure.log"
 )
 
-type Redundancy string
+type LogLevel int
 
 const (
-	Erasure_RS  Redundancy = "Erasure_RS"
-	Erasure_XOR Redundancy = "Erasure_XOR"
-	Erasure_LRC Redundancy = "Erasure_LRC"
-	Replication Redundancy = "Replication"
-	None        Redundancy = "None"
+	Disabled LogLevel = iota
+	FatalLevel
+	ErrorLevel
+	InfoLevel
+	DebugLevel
 )
 
-func (r Redundancy) String() string {
-	return string(r)
-}
-
-type Mode string
+type Redundancy int
 
 const (
-	InitMode      Mode = "Init"
-	NormalMode    Mode = "Normal"
-	DegradedMode  Mode = "Degraded"
-	RecoveryMode  Mode = "Recovery"
-	ScaleMode     Mode = "Scale"
-	PowerSaveMode Mode = "PowerSave"
+	Erasure_RS Redundancy = iota
+	Erasure_XOR
+	Erasure_LRC
+	Replication
+	None
 )
 
-func (m Mode) String() string {
-	return string(m)
-}
+type Mode int
+
+const (
+	InitMode Mode = iota
+	NormalMode
+	DegradedMode
+	RecoveryMode
+	ScaleMode
+	PowerSaveMode
+)
+
+type Output int
+
+const (
+	CONSOLE Output = iota
+	LOGFILE
+	NONE
+)
 
 type ClusterOption struct {
 	verbose  bool
-	override int // 1:true, 0:false, default to 0
+	override bool // 1:true, 0:false, default to 0
+	output   Output
+	logFile  string
 }
 
 var defaultClusterOption = &ClusterOption{
 	verbose:  true,
-	override: 2,
+	override: false,
+	output:   CONSOLE,
+	logFile:  defaultLogFile,
 }
 
 //Hash maps bytes to uint32
@@ -104,6 +121,9 @@ type Cluster struct {
 
 	//consistentHash func
 	hash Hash
+
+	//localNode is the local node instance
+	localNode *Node
 
 	//nodeMap contains all the node using consistent hash algorithm
 	nodeMap map[int64]*Node
@@ -195,11 +215,14 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 		if len(s) == 0 {
 			xlog.Fatal(errNoServerInCluster)
 		}
+
 		for _, node := range c.nodeList {
 			for _, addr := range localAddr {
 				if node.addr == addr {
+					c.localNode = node
 					if node.isRole("Server") {
 						c.isServer = true
+						c.aliveNodeNum = 1
 					}
 					c.inCluster = true
 					break
@@ -207,6 +230,7 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 			}
 
 		}
+
 		if !c.inCluster {
 			xlog.Warn("You're operating a node out of the cluster, it will be treated as a client with access limitation.")
 		}
@@ -215,6 +239,19 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 		}
 	})
 	return c
+}
+
+func (c *Cluster) SetOuput(level LogLevel, filename string) {
+	if filename != "" {
+		f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
+		xlog.SetLevel(int(level), f)
+	} else {
+		xlog.SetLevel(int(level), os.Stdout)
+	}
+
 }
 
 //AddNode adds a node into cluster using ConsistentHashAlgorithm
@@ -304,10 +341,39 @@ func (c *Cluster) ReadNodesAddr() {
 //the server handle HTTP requests
 func (c *Cluster) StartServer(port string) {
 	c.server.HandleHTTP()
-
+	c.SetNodeStatus(2 * defaultHeartbeatDuration)
 	if err := http.ListenAndServe(port, c.server); err != nil {
 		xlog.Fatal(err)
 	}
+
+}
+
+//the server handle HTTP requests
+func (c *Cluster) SetNodeStatus(duration time.Duration) {
+	//set the nodes as unconnected every interval
+	go func() {
+		t := time.NewTicker(duration)
+		for {
+			select {
+			case <-t.C:
+				for _, node := range c.nodeMap {
+					if node.addr == c.localNode.addr {
+						continue
+					}
+					if node.stat == NetworkError {
+						xlog.Errorf("node:%s disconnected!\n", node.addr)
+						c.aliveNodeNum--
+						continue
+					}
+					node.stat = NetworkError
+
+				}
+			case <-c.ctx.Done():
+				// xlog.Error(c.ctx.Error())
+				return
+			}
+		}
+	}()
 }
 
 //heartbeat enables nodes to send periodic message to server to monitor the node's health

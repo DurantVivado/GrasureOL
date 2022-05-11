@@ -1,20 +1,22 @@
 #!/bin/bash
 #1 obtain the number of input parameters, if none then quit
 user=grasure
-hosts=(192.168.58.129 192.168.58.130 192.168.58.134 192.168.58.135)
+hosts=(192.168.58.136 192.168.58.135 192.168.58.129 192.168.58.137)
 pcount=$#
-cmd=$1 
-if (($pcount != 1))
-then 
-	echo usage:./autoSync commands
-	exit;
-fi
+# cmd=$1 
+cmd="cd go/src/github.com/DurantVivado/GrasureOL;/usr/local/go/bin/go test -run ^TestNode_HeartBeat$ github.com/DurantVivado/GrasureOL -v"
+# if (($pcount != 1))
+# then 
+# 	echo usage:./autoSync commands "(wrapped in double quotes)"
+# 	exit;
+# fi
 
 #5 concurrent
 for host in ${hosts[@]}
 do
 	#echo ---------autoSync $user@$host start------------
-	ssh $user@${host} $cmd
+	echo command:$cmd
+	ssh $user@${host} $cmd &
 	echo ---------send command to $user@$host ------------
 done
 
