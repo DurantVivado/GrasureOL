@@ -53,8 +53,8 @@ func TestCluster_ErasurePool(t *testing.T) {
 	c.SetOuput(DebugLevel, "")
 	go c.StartServer(":9999")
 	c.AddErasurePools(
-		NewErasurePool(RS.String(), 2, 2, 4, 1024, nil),
-		NewErasurePool(RS.String(), 3, 2, 5, 4096, nil),
+		NewErasurePool(Erasure_RS, 2, 2, 4, 1024, nil),
+		NewErasurePool(Erasure_RS, 3, 2, 5, 4096, nil),
 	)
 
 }

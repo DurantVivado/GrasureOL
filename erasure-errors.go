@@ -55,8 +55,9 @@ var errDiskNumTooLarge = errors.New("diskNum is larger than provided")
 
 var errTooFewBlockAliveInStripe = errors.New("not enough blocks for reading in a stripe")
 
-// errUnexpected - unexpected error, requires manual intervention.
-var errUnexpected = storageErr("unexpected error, please report this issue at https://github.com/minio/minio/issues")
+var errDiskNotFound = errors.New("disk not found")
+
+var errNoRedunSelected = errors.New("no redun scheme is selected")
 
 // errCorruptedFormat - corrupted backend format.
 var errCorruptedFormat = storageErr("corrupted backend format, specified disk mount has unexpected previous content")
@@ -75,9 +76,6 @@ var errDiskFull = storageErr("disk path full")
 
 // errDiskNotDir - cannot use storage disk if its not a directory
 var errDiskNotDir = storageErr("disk is not directory or mountpoint")
-
-// errDiskNotFound - cannot find the underlying configured disk anymore.
-var errDiskNotFound = storageErr("disk not found")
 
 // errFaultyRemoteDisk - remote disk is faulty.
 var errFaultyRemoteDisk = storageErr("remote disk is faulty")

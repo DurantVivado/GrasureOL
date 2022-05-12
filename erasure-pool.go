@@ -3,30 +3,23 @@ package grasure
 import (
 	"sync"
 
+	"github.com/DurantVivado/GrasureOL/encoder"
 	"github.com/DurantVivado/GrasureOL/xlog"
+	"github.com/DurantVivado/reedsolomon"
 )
-
-type EncodeType string
-
-const (
-	RS      EncodeType = "RS"
-	XOR     EncodeType = "XOR"
-	LRC     EncodeType = "LRC"
-	Replica EncodeType = "Replica"
-)
-
-func (e EncodeType) String() string {
-	return string(e)
-}
 
 type erasurePoolOption struct {
+	// whether to override former files or directories, default to false
+	override bool
 }
 
-var defaultErasurePoolOption = &erasurePoolOption{}
+var defaultErasurePoolOption = &erasurePoolOption{
+	override: false,
+}
 
 type ErasurePool struct {
-	//the encodeType is how the files are encoded in this pool
-	encodeType EncodeType
+	//the redun is how the files are encoded in this pool
+	Redun Redundancy `json:"redundancy"`
 
 	// the number of data blocks in a stripe
 	K int `json:"dataShards"`
@@ -35,7 +28,7 @@ type ErasurePool struct {
 	M int `json:"parityShards"`
 
 	//the used node number for the pool
-	nodeNum int
+	NodeNum int `json:"nodeNum"`
 
 	// the block size. default to 4KiB
 	BlockSize int64 `json:"blockSize"`
@@ -43,11 +36,11 @@ type ErasurePool struct {
 	//the nodes that belongs to the pool, by ID
 	nodes []*Node
 
-	//file map, it stores on meta server
-	fileMap sync.Map
+	//the encoder handles encoding and decoding of files
+	enc encoder.Encoder
 
-	// whether to override former files or directories, default to false
-	Override bool `json:"-"`
+	//file map, it stores on meta server
+	layout *Layout
 
 	// errgroup pool
 	errgroupPool sync.Pool
@@ -61,7 +54,7 @@ type ErasurePool struct {
 //NewErasurePool news an erasurePool with designated dataShards, parityShards, nodeNum and blockSize,
 //When set nodeList as nil by default, the pool uses the first nodeNum nodes,
 //you can specify the nodes in the order of their ids (indexed from 0).
-func NewErasurePool(encodeType string, dataShards, parityShards, nodeNum int, blockSize int64, nodeList []int) *ErasurePool {
+func NewErasurePool(redun Redundancy, dataShards, parityShards, nodeNum int, blockSize int64, nodeList []int) *ErasurePool {
 	if dataShards <= 0 || parityShards <= 0 {
 		xlog.Fatal(errInvalidShardNumber)
 	}
@@ -74,14 +67,14 @@ func NewErasurePool(encodeType string, dataShards, parityShards, nodeNum int, bl
 	}
 
 	erasurePool := &ErasurePool{
-		encodeType:   EncodeType(encodeType),
+		Redun:        redun,
 		K:            dataShards,
 		M:            parityShards,
 		BlockSize:    blockSize,
-		fileMap:      sync.Map{},
 		errgroupPool: sync.Pool{},
 		mu:           sync.RWMutex{},
-		nodeNum:      nodeNum,
+		NodeNum:      nodeNum,
+		options:      defaultErasurePoolOption,
 	}
 	if nodeList == nil {
 		//default
@@ -90,6 +83,19 @@ func NewErasurePool(encodeType string, dataShards, parityShards, nodeNum int, bl
 		for _, id := range nodeList {
 			erasurePool.nodes = append(erasurePool.nodes, c.nodeList[id])
 		}
+	}
+	switch redun {
+	case Erasure_RS:
+		enc, err := reedsolomon.New(dataShards, parityShards,
+			reedsolomon.WithAutoGoroutines(int(blockSize)),
+			reedsolomon.WithCauchyMatrix(),
+			reedsolomon.WithInversionCache(true))
+		if err != nil {
+			xlog.Fatal(err)
+		}
+		erasurePool.enc = enc
+	default:
+		xlog.Fatal(errNoRedunSelected)
 	}
 	return erasurePool
 }

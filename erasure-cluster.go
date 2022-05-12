@@ -19,10 +19,10 @@ import (
 
 const (
 	defaultInfoFilePath          = "cluster.info"
-	defaultNodeFilePath          = "examples/nodes.addr"
+	defaultNodeFilePath          = "nodes.addr"
 	defaultVirtualNum            = 3
 	defaultReplicaNum            = 3
-	defaultRedundancy            = Erasure_RS
+	defaultRedundancy            = None
 	defaultHeartbeatDuration     = 3 * time.Second
 	defaultNodeConnectExpireTime = 100 * time.Second
 	defaultPort                  = ":9999"
@@ -33,6 +33,7 @@ const (
 	defaultDebugPath             = "/debug/grasureRPC"
 	defaultLogLevel              = InfoLevel
 	defaultLogFile               = "grasure.log"
+	defaultDiskFilePath          = "disks.path"
 )
 
 type LogLevel int
@@ -45,14 +46,14 @@ const (
 	DebugLevel
 )
 
-type Redundancy int
+type Redundancy string
 
 const (
-	Erasure_RS Redundancy = iota
-	Erasure_XOR
-	Erasure_LRC
-	Replication
-	None
+	Erasure_RS  Redundancy = "Erasure_RS"
+	Erasure_XOR            = "Erasure_XOR"
+	Erasure_LRC            = "Erasure_LRC"
+	Replication            = "Replication"
+	None                   = "None"
 )
 
 type Mode int
@@ -329,7 +330,7 @@ func (c *Cluster) ReadNodesAddr() {
 		for _, role := range strings.Split(lineArr[1], ",") {
 			nodeTyp = nodeTyp | getType(role)
 		}
-		node := NewNode(c.ctx, id, addr, NodeType(nodeTyp))
+		node := NewNode(c.ctx, id, addr, NodeType(nodeTyp), defaultRedundancy)
 		if id <= c.usedNodeNum {
 			c.AddNode(id, node)
 		}
@@ -391,7 +392,7 @@ func (c *Cluster) heartbeatToServer(registry, port string, duration time.Duratio
 //whose key should be like "RS-10-4-1024k", namely policy.
 func (c *Cluster) AddErasurePools(pool ...*ErasurePool) {
 	for _, p := range pool {
-		key := string(p.encodeType) + toString(p.K) + "-" + toString(p.M) + "-" + toString(p.BlockSize)
+		key := string(p.Redun) + toString(p.K) + "-" + toString(p.M) + "-" + toString(p.BlockSize)
 		c.poolMap[key] = p
 	}
 }

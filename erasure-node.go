@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/DurantVivado/GrasureOL/xlog"
-	"github.com/DurantVivado/reedsolomon"
 )
 
 type NodeType int16
@@ -38,7 +37,7 @@ func getType(role string) int16 {
 //low  |  1	 |   1	 | 	   1 	| 	 1	 |  1  |  1  | high
 //Type:Client, Server, Computing, Gateway, Data, Name
 const (
-	ClientNode = 1 << iota
+	ClientNode NodeType = 1 << iota
 	ServerNode
 	ComputingNode
 	GateWayNode
@@ -48,76 +47,46 @@ const (
 	TestNode
 )
 
-type NodeStat string
+type NodeStat int
 
 const (
-	NodeInit     NodeStat = "NodeInit"
-	HealthOK     NodeStat = "HealthOK"
-	CPUFailed    NodeStat = "CPUFailed"
-	DiskFailed   NodeStat = "DiskFailed"
-	NetworkError NodeStat = "NetworkError"
+	NodeInit NodeStat = iota
+	HealthOK
+	CPUFailed
+	DiskFailed
+	NetworkError
 )
 
-//Options define the parameters for read and recover mode
-type Options struct {
-}
-
 type Node struct {
+	//uid is the node's unique id in the cluster
 	uid int64
 
+	//addr is the IP address
 	addr string
 
+	//nodeType is the type of the node
 	nodeType NodeType
 
+	//reduandancy specifies the node-level redundnacy policy to ensure data availability
+	redun Redundancy
+
+	//stat is the state of the node, every node should be informed of other nodes' state
 	stat NodeStat
 
-	//For storage node:
-	//a meta structure indicates the blocks belong to which file and index.
-	blockArr []*blockInfo
+	//for storage nodes
+	diskArrays *DiskArray
 
-	//For brevity's concern, we omit the disk infos
-	//the root directory of data blob
-	dataRoot string
-	//the root directory of meta file
-	metaRoot string
+	// //For name node:
+	// //FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
+	// FileMeta []*fileInfo `json:"fileLists"`
 
-	//For name node:
-	//FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
-	FileMeta []*fileInfo `json:"fileLists"`
+	// //how many stripes are allowed to encode/decode concurrently
+	// ConStripes int `json:"-"`
 
-	//For computing node:
-	// the reedsolomon streaming encoder, for streaming access
-	sEnc reedsolomon.StreamEncoder
-
-	// the reedsolomon encoder, for block access
-	enc reedsolomon.Encoder
-
-	//how many stripes are allowed to encode/decode concurrently
-	ConStripes int `json:"-"`
-
-	// the replication factor for config file
-	ReplicateFactor int
+	// // the replication factor for config file
+	// ReplicateFactor int
 
 	ctx context.Context
-	opt *Options
-}
-
-//StorageNode is a node that storages data and parity blocks
-type StorageNode struct {
-	Node
-
-	//whether data is re-encoded in the node
-	redundancy Redundancy
-
-	// the used disk number, only the first diskNum of disks are used in diskPathFile
-	usedDiskNum int `json:"diskNum"`
-
-	// diskInfo lists
-	diskInfos []*diskInfo
-
-	// the path of file recording all disks' path
-	// default to the project's root path
-	diskFilePath string `json:"-"`
 }
 
 //Namenode stores the meta data of cluster. There can be multiple
@@ -126,7 +95,7 @@ type Namenode struct {
 	Node
 }
 
-func NewNode(ctx context.Context, id int, addr string, nodeType NodeType) *Node {
+func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun Redundancy) *Node {
 	//initialize various nodes w.r.t types
 	newnode := &Node{
 		uid:      int64(c.hash([]byte(strconv.Itoa(id)))),
@@ -134,6 +103,10 @@ func NewNode(ctx context.Context, id int, addr string, nodeType NodeType) *Node 
 		nodeType: nodeType,
 		ctx:      ctx,
 		stat:     NodeInit,
+		redun:    redun,
+	}
+	if newnode.isRole("DATA") {
+		newnode.diskArrays = NewDiskArray(defaultDiskFilePath)
 	}
 
 	return newnode

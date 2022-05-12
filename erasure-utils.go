@@ -349,3 +349,16 @@ func getLocalAddr() (ret []string) {
 	}
 	return
 }
+
+//return the total and free volume of a disk in bytes
+func DiskUsage(path string) (uint64, uint64) {
+	fs := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &fs)
+	if err != nil {
+		return 0, 0
+	}
+	All := fs.Blocks * uint64(fs.Bsize)
+	Free := fs.Bfree * uint64(fs.Bsize)
+
+	return All, Free
+}

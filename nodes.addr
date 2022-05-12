@@ -1,0 +1,7 @@
+//demo: ip_address[xxx.xxx.xxx.xxx] role["server","gateway","name","computing","data"]
+//There should only be one server that deploys the cluster
+192.168.58.128 server,computing
+192.168.58.136 data
+192.168.58.129 name,data
+192.168.58.137 data
+192.168.58.135 data
