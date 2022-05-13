@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,15 +26,18 @@ const (
 	defaultRedundancy            = None
 	defaultHeartbeatDuration     = 3 * time.Second
 	defaultNodeConnectExpireTime = 100 * time.Second
-	defaultPort                  = ":9999"
+	defaultHeartbeatPort         = ":9999"
+	defaultWritePort             = ":8888"
 	defaultConnectionTimeout     = 10 * time.Second
 	defaultHandleTimeout         = 0
 	connected                    = "200 Connected to Grasure RPC"
 	defaultRPCPath               = "/grasure"
 	defaultDebugPath             = "/debug/grasureRPC"
+	defaultWritePath             = "/grasure/write"
 	defaultLogLevel              = InfoLevel
 	defaultLogFile               = "grasure.log"
 	defaultDiskFilePath          = "disks.path"
+	defaultDataLayout            = Random
 )
 
 type LogLevel int
@@ -46,14 +50,24 @@ const (
 	DebugLevel
 )
 
+type Volume struct {
+	Used  uint64 `json:"Used"`
+	Free  uint64 `json:"Free"`
+	Total uint64 `json:"Total"`
+}
+
+func (v *Volume) getUsage() (uint64, uint64) {
+	return v.Total, v.Free
+}
+
 type Redundancy string
 
 const (
 	Erasure_RS  Redundancy = "Erasure_RS"
-	Erasure_XOR            = "Erasure_XOR"
-	Erasure_LRC            = "Erasure_LRC"
-	Replication            = "Replication"
-	None                   = "None"
+	Erasure_XOR Redundancy = "Erasure_XOR"
+	Erasure_LRC Redundancy = "Erasure_LRC"
+	Replication Redundancy = "Replication"
+	None        Redundancy = "None"
 )
 
 type Mode int
@@ -96,8 +110,8 @@ var once sync.Once
 
 //Cluster is an instance that is only created once at each node
 type Cluster struct {
-	//uuid is the global unique id of a cluster
-	uuid int64 `json:"uuid"`
+	//UUID is the global unique id of a cluster
+	UUID int64 `json:"UUID"`
 
 	//the mode on which the cluster operates
 	mode Mode
@@ -108,7 +122,7 @@ type Cluster struct {
 	//do the local node belongs to the Cluster? If no, we regard it as a Client.
 	inCluster bool
 
-	//is the local node the server node? Only server node gen uuid for other nodes.
+	//is the local node the server node? Only server node gen UUID for other nodes.
 	isServer bool
 
 	//the server module of the current node
@@ -126,11 +140,13 @@ type Cluster struct {
 	//localNode is the local node instance
 	localNode *Node
 
-	//nodeMap contains all the node using consistent hash algorithm
-	nodeMap map[int64]*Node
+	//nodeMap contains all the node using consistent hash algorithm: hash_num->*Node
+	nodeMap sync.Map
 
-	//nodeList is a list containing all nodes' uuid, with only the first usedNodeNum nodes used
-	nodeList []*Node
+	//nodeList is a list containing all nodes' UUID, with only the first usedNodeNum nodes used
+	nodeList  []*Node
+	nameNodes []*Node
+	dataNodes []*Node
 
 	//virtualList is a list containing all virtual node, each real node is mapped to virtualNum
 	//virtualNode to ensure load balance
@@ -149,13 +165,11 @@ type Cluster struct {
 	redundancy Redundancy `json:"redundancy"`
 
 	//pools are referred to as a specific group of erasure coding, in the form (codeType-K-M-BlockSize),
-	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.
-	poolMap map[string]*ErasurePool `json:"pools"`
+	//e.g., rs-3-2-1024 is one pool, but xor-3-2-1024 refers to another.string->*ErasurePool
+	poolMap sync.Map
 
 	//Used, Free, Total are capacity-related parameters
-	Used  uint64 `json:"Used"`
-	Free  uint64 `json:"Free"`
-	Total uint64 `json:"Total"`
+	volume *Volume
 
 	//InfoFilePath is the path of a textual file storing basic information of the cluster
 	InfoFilePath string
@@ -189,22 +203,21 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 			hashfn = crc32.ChecksumIEEE
 		}
 		c = &Cluster{
-			uuid:         0,
+			UUID:         0,
 			localAddr:    localAddr,
 			inCluster:    false,
 			isServer:     false,
 			server:       NewServer(),
 			client:       nil,
-			Used:         0,
-			Free:         0,
-			Total:        0,
+			volume:       &Volume{0, 0, 0},
 			hash:         hashfn,
 			usedNodeNum:  usedNodeNum,
 			redundancy:   defaultRedundancy,
 			InfoFilePath: defaultInfoFilePath,
 			NodeFilePath: defaultNodeFilePath,
-			nodeMap:      make(map[int64]*Node),
 			nodeList:     make([]*Node, 0),
+			dataNodes:    make([]*Node, 0),
+			nameNodes:    make([]*Node, 0),
 			virtualList:  make([]int64, 0),
 			virtualNum:   defaultVirtualNum,
 			options:      defaultClusterOption,
@@ -212,16 +225,24 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 		}
 		//read the nodes infos via reading NodeFilePath
 		c.ReadNodesAddr()
-		s := c.GetIPsFromRole("Server")
+		s := c.GetIPsFromRole(SERVER)
 		if len(s) == 0 {
-			xlog.Fatal(errNoServerInCluster)
+			xlog.Fatal(errNoServerNodeInCluster)
+		}
+		n := c.GetIPsFromRole(NAME)
+		if len(n) == 0 {
+			xlog.Fatal(errNoNameNodeInCluster)
+		}
+		d := c.GetIPsFromRole(DATA)
+		if len(d) == 0 {
+			xlog.Fatal(errNoDataNodeInCluster)
 		}
 
 		for _, node := range c.nodeList {
 			for _, addr := range localAddr {
 				if node.addr == addr {
 					c.localNode = node
-					if node.isRole("Server") {
+					if node.isRole(SERVER) {
 						c.isServer = true
 						c.aliveNodeNum = 1
 					}
@@ -231,7 +252,9 @@ func NewCluster(ctx context.Context, usedNodeNum int, hashfn Hash) *Cluster {
 			}
 
 		}
-
+		if c.localNode.isRole(DATA) {
+			c.localNode.diskArrays = NewDiskArray(defaultDiskFilePath)
+		}
 		if !c.inCluster {
 			xlog.Warn("You're operating a node out of the cluster, it will be treated as a client with access limitation.")
 		}
@@ -262,41 +285,64 @@ func (c *Cluster) AddNode(id int, node *Node) {
 		c.virtualList = append(c.virtualList, hashVal)
 	}
 	hashVal := int64(c.hash([]byte(strconv.Itoa(id))))
-	c.nodeMap[hashVal] = node
+	c.nodeMap.Store(hashVal, node)
 	sortInt64(c.virtualList)
+}
+
+//DelNode deletes a node from the map
+func (c *Cluster) DelNode(id int) {
+	for i := 0; i < c.virtualNum; i++ {
+		hashVal := int64(c.hash([]byte(strconv.Itoa(i) + strconv.Itoa(id))))
+		id := sort.Search(len(c.virtualList), func(i int) bool {
+			return c.virtualList[i] >= hashVal
+		})
+		c.virtualList = append(c.virtualList[:id], c.virtualList[id+1:]...)
+	}
+	hashVal := int64(c.hash([]byte(strconv.Itoa(id))))
+	c.nodeMap.Delete(hashVal)
 }
 
 //GetIPsFromRole returns IP address according to given role
 func (c *Cluster) GetIPsFromRole(role string) (addrs []string) {
 
-	for _, node := range c.nodeMap {
+	c.nodeMap.Range(func(k, v interface{}) bool {
+		node, _ := v.(*Node)
 		if node.isRole(role) {
 			addrs = append(addrs, node.addr)
+			return true
 		}
-	}
+		return false
+	})
 	return
 }
 
 //GetNodesFromRole returns Node slice according to given role
 func (c *Cluster) GetNodesFromRole(role string) (nodes []*Node) {
-	for _, node := range c.nodeMap {
+	c.nodeMap.Range(func(k, v interface{}) bool {
+		node, _ := v.(*Node)
 		if node.isRole(role) {
 			nodes = append(nodes, node)
+			return true
 		}
-	}
+		return false
+	})
 	return
 }
 
 //GetLocalNode returns the local node if exists in the cluster
-func (c *Cluster) GetLocalNode() *Node {
-	for _, node := range c.nodeMap {
+func (c *Cluster) GetLocalNode() (ret *Node) {
+	c.nodeMap.Range(func(k, v interface{}) bool {
+		node, _ := v.(*Node)
 		for _, addr := range c.localAddr {
 			if addr == node.addr {
-				return node
+				ret = node
+				return true
 			}
 		}
-	}
-	return nil
+		return false
+	})
+
+	return ret
 }
 
 //ReadNodesAddr reads the node information from file
@@ -334,15 +380,30 @@ func (c *Cluster) ReadNodesAddr() {
 		if id <= c.usedNodeNum {
 			c.AddNode(id, node)
 		}
+		if node.isRole(DATA) {
+			c.dataNodes = append(c.dataNodes, node)
+		}
+		if node.isRole(NAME) {
+			c.nameNodes = append(c.nameNodes, node)
+		}
 		c.nodeList = append(c.nodeList, node)
 		id++
 	}
 }
 
 //StartServer starts the server to handle HTTP requests
-func (c *Cluster) StartServer(port string) {
+func (c *Cluster) StartHeartbeatServer(port string) {
 	c.server.HandleHTTP()
 	c.SetNodeStatus(2 * defaultHeartbeatDuration)
+	if err := http.ListenAndServe(port, c.server); err != nil {
+		xlog.Fatal(err)
+	}
+
+}
+
+//StartDFSServer starts the server to handle HTTP requests
+func (c *Cluster) StartDFSServer(port string) {
+	c.server.HandleHTTP()
 	if err := http.ListenAndServe(port, c.server); err != nil {
 		xlog.Fatal(err)
 	}
@@ -357,18 +418,19 @@ func (c *Cluster) SetNodeStatus(duration time.Duration) {
 		for {
 			select {
 			case <-t.C:
-				for _, node := range c.nodeMap {
+				c.nodeMap.Range(func(k, v interface{}) bool {
+					node, _ := v.(*Node)
 					if node.addr == c.localNode.addr {
-						continue
+						return false
 					}
 					if node.stat == NetworkError {
 						xlog.Errorf("node:%s disconnected!\n", node.addr)
 						c.aliveNodeNum--
-						continue
+						return false
 					}
 					node.stat = NetworkError
-
-				}
+					return true
+				})
 			case <-c.ctx.Done():
 				// xlog.Error(c.ctx.Error())
 				return
@@ -392,9 +454,22 @@ func (c *Cluster) heartbeatToServer(registry, port string, duration time.Duratio
 //whose key should be like "RS-10-4-1024k", namely policy.
 func (c *Cluster) AddErasurePools(pool ...*ErasurePool) {
 	for _, p := range pool {
-		key := string(p.Redun) + toString(p.K) + "-" + toString(p.M) + "-" + toString(p.BlockSize)
-		c.poolMap[key] = p
+		key := string(p.Redun) + "-" + toString(p.K) + "-" + toString(p.M) + "-" + toString(p.BlockSize)
+		c.poolMap.Store(key, p)
 	}
+}
+
+//CheckIfExistPool checks if there exists pool of certain pattern, e.g. "RS-4-2-4096"
+func (c *Cluster) CheckIfExistPool(pattern string) (*ErasurePool, bool) {
+	if v, ok := c.poolMap.Load(pattern); ok {
+		return v.(*ErasurePool), true
+	} else {
+		return nil, false
+	}
+}
+
+func (c *Cluster) getClusterInfo() string {
+	return
 }
 
 //reset the storage

@@ -1,7 +1,9 @@
 package grasure
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -105,13 +107,14 @@ func Heartbeat(ctx context.Context, registry, addr string, duration time.Duratio
 		duration = defaultRegistryTimeout - time.Duration(1)*time.Minute
 	}
 	var err error
-	err = sendHeartbeat(registry, addr)
+	buf := bytes.NewReader([]byte(c.localNode.getState()))
+	err = sendHeartbeat(registry, addr, buf)
 	go func() {
 		t := time.NewTicker(duration)
 		for err == nil {
 			select {
 			case <-t.C:
-				err = sendHeartbeat(registry, addr)
+				err = sendHeartbeat(registry, addr, buf)
 			case <-ctx.Done():
 				// xlog.Error(ctx.Err())
 				return
@@ -120,10 +123,10 @@ func Heartbeat(ctx context.Context, registry, addr string, duration time.Duratio
 	}()
 }
 
-func sendHeartbeat(registry, addr string) error {
+func sendHeartbeat(registry, addr string, body io.Reader) error {
 	// xlog.Infoln(addr, "send heart beat to registry", registry)
 	httpClient := &http.Client{}
-	req, _ := http.NewRequest("HEARTBEAT", registry, nil)
+	req, _ := http.NewRequest("HEARTBEAT", registry, body)
 	req.Header.Set("X-Grasure-Server", addr)
 	if _, err := httpClient.Do(req); err != nil {
 		xlog.Fatalln("rpc server: heart beat err:", err)

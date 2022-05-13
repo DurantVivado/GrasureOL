@@ -6,29 +6,38 @@ package grasure
 
 import (
 	"context"
+	"fmt"
 	"strconv"
-	"strings"
-
-	"github.com/DurantVivado/GrasureOL/xlog"
+	"sync"
 )
 
 type NodeType int16
 
+const (
+	DATA      = "DATA"
+	CLIENT    = "CLIENT"
+	SERVER    = "SERVER"
+	COMPUTING = "COMPUTING"
+	GATEWAY   = "GATEWAY"
+	NAME      = "NAME"
+)
+
 func getType(role string) int16 {
-	if strings.ToUpper(role) == "CLIENT" {
+	switch role {
+	case CLIENT:
 		return 1
-	} else if strings.ToUpper(role) == "SERVER" {
+	case SERVER:
 		return 1 << 1
-	} else if strings.ToUpper(role) == "COMPUTING" {
+	case COMPUTING:
 		return 1 << 2
-	} else if strings.ToUpper(role) == "GATEWAY" {
+	case GATEWAY:
 		return 1 << 3
-	} else if strings.ToUpper(role) == "DATA" {
+	case DATA:
 		return 1 << 4
-	} else if strings.ToUpper(role) == "NAME" {
+	case NAME:
 		return 1 << 5
-	} else {
-		xlog.Errorf("NodeType Undefined")
+	default:
+		return -1
 	}
 	return 0
 }
@@ -76,23 +85,17 @@ type Node struct {
 	//for storage nodes
 	diskArrays *DiskArray
 
-	// //For name node:
-	// //FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
-	// FileMeta []*fileInfo `json:"fileLists"`
+	//For name node:
+	//FileMeta lists, indicating fileName, fileSize, fileHash, fileDist...
+	FileMeta sync.Map
 
-	// //how many stripes are allowed to encode/decode concurrently
-	// ConStripes int `json:"-"`
+	// volume parametes
+	volume *Volume
 
 	// // the replication factor for config file
 	// ReplicateFactor int
 
 	ctx context.Context
-}
-
-//Namenode stores the meta data of cluster. There can be multiple
-//Namenode in the cluster.
-type Namenode struct {
-	Node
 }
 
 func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun Redundancy) *Node {
@@ -104,9 +107,7 @@ func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun 
 		ctx:      ctx,
 		stat:     NodeInit,
 		redun:    redun,
-	}
-	if newnode.isRole("DATA") {
-		newnode.diskArrays = NewDiskArray(defaultDiskFilePath)
+		volume:   &Volume{0, 0, 0},
 	}
 
 	return newnode
@@ -116,6 +117,10 @@ func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun 
 func (n *Node) isRole(role string) bool {
 	nT := int16(n.nodeType)
 	return (nT & getType(role)) != 0
+}
+
+func (n *Node) getState() string {
+	return fmt.Sprintf("state:%d;total:%d;used:%d", n.stat, n.volume.Total, n.volume.Used)
 }
 
 type BlockReadRequest struct {

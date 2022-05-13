@@ -83,25 +83,14 @@ func NewLayout(pattern Pattern, stripeNum, dataShards, parityShards, nodeNum int
 		countSum := make([]int, nodeNum)
 		for i := 0; i < stripeNum; i++ {
 			layout.distribution[i] = make([]int, stripeLen)
-			parity := dataShards
-			for c := 0; c < parityShards; c++ {
-				j := (i%stripeLen + c) % stripeLen
-				layout.distribution[i][j] = parity
-				parity++
+			for c := 0; c < stripeLen; c++ {
+				j := (parityShards + c + i) % stripeLen
+				layout.distribution[i][j] = c
 				diskId := layout.distribution[i][j]
 				layout.blockToOffset[i][j] = countSum[diskId]
 				countSum[diskId]++
 			}
-			data := i
-			for c := 0; c < stripeLen; c++ {
-				if layout.distribution[i][c] == 0 {
-					layout.distribution[i][c] = (stripeLen - data) % stripeLen
-					data++
-					diskId := layout.distribution[i][c]
-					layout.blockToOffset[i][c] = countSum[diskId]
-					countSum[diskId]++
-				}
-			}
+
 		}
 	} else if pattern == RightAsymmetric {
 		countSum := make([]int, nodeNum)

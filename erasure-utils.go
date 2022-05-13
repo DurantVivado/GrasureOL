@@ -299,13 +299,13 @@ func copyFile(srcFile, destFile string) (int64, error) {
 	return io.Copy(file2, file1)
 }
 
-//generate random uuid
+//generate random UUID
 // fix id = 0 as the cluster id
 // id > 1 as the node id
 func genUUID(id int64) int64 {
 	node, err := snowflake.NewNode(id)
 	if err != nil {
-		xlog.Fatal("gen uuid failed", err)
+		xlog.Fatal("gen UUID failed", err)
 	}
 
 	return node.Generate().Int64()

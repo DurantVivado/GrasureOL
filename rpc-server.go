@@ -241,6 +241,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		_, _ = io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
 		s.ServeConn(conn)
+	case "WRITE":
+		handleWrite(w, req)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -255,6 +257,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (s *Server) HandleHTTP() {
 	http.Handle(defaultRPCPath, s)
 	http.Handle(defaultDebugPath, debugHTTP{s})
+	http.Handle(defaultWritePath, s)
 	xlog.Infoln("rpc server debug path:", defaultDebugPath)
 }
 

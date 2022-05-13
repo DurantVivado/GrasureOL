@@ -13,9 +13,7 @@ type DiskInfo struct {
 	available bool
 
 	//the capacity of a disk (in Bytes)
-	total uint64
-	used  uint64
-	free  uint64
+	volume *Volume
 }
 
 //NewDiskInfo news a disk with basic information
@@ -23,6 +21,7 @@ func NewDiskInfo(path string) *DiskInfo {
 	return &DiskInfo{
 		path:      path,
 		available: true,
+		volume:    &Volume{0, 0, 0},
 	}
 }
 
@@ -46,9 +45,7 @@ type DiskArray struct {
 	state DiskState
 
 	//the capacity of a disk (in Bytes)
-	total uint64
-	used  uint64
-	free  uint64
+	volume *Volume
 }
 
 func NewDiskArray(diskFilePath string) *DiskArray {
@@ -56,9 +53,7 @@ func NewDiskArray(diskFilePath string) *DiskArray {
 	diskArray := &DiskArray{
 		diskFilePath: diskFilePath,
 		state:        Normal,
-		total:        0,
-		used:         0,
-		free:         0,
+		volume:       &Volume{0, 0, 0},
 	}
 	diskArray.ReadDiskPath()
 	return diskArray
@@ -91,12 +86,12 @@ func (d *DiskArray) ReadDiskPath() {
 		}
 		total, free := DiskUsage(path)
 		diskInfo := NewDiskInfo(path)
-		diskInfo.total = total
-		diskInfo.free = free
-		diskInfo.used = total - free
+		diskInfo.volume.Total = total
+		diskInfo.volume.Free = free
+		diskInfo.volume.Used = total - free
 		d.diskInfos = append(d.diskInfos, diskInfo)
-		d.total += diskInfo.total
-		d.free += diskInfo.free
-		d.used += diskInfo.used
+		d.volume.Total += total
+		d.volume.Free += free
+		d.volume.Used += total - free
 	}
 }

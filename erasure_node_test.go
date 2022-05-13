@@ -10,8 +10,9 @@ import (
 func TestNode_HeartBeat(t *testing.T) {
 	ctx, _ := context.WithCancel(context.Background())
 	//defer cancel()
-	c := NewCluster(ctx, 2, nil)
-	s := c.GetIPsFromRole("Server")
+	c := NewCluster(ctx, 5, nil)
+	go c.StartDFSServer(defaultWritePort)
+	s := c.GetIPsFromRole(SERVER)
 	if len(s) == 0 {
 		t.Fatal("No such role as server")
 	}

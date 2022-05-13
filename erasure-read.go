@@ -1,37 +1,5 @@
 package grasure
 
-import (
-	"io"
-)
-//ParallelReader is a reader that handles parallel disk reads
-type ParallelReader struct {
-	readers []io.ReaderAt
-	dataShards int
-	parityShards int
-	offset uint64
-	size uint64
-	paraBuf [][]byte
-	buf []byte
-	degrade bool
-}
-
-func NewParallelReader(pool *ErasurePool, offset, size uint64,  degrade bool) *ParallelReader{
-	return &ParallelReader{
-		dataShards:   pool.K,
-		parityShards: pool.M,
-		readers:      make([]io.ReaderAt, pool.K + pool.M),
-		offset:       offset,
-		size:         size,
-		paraBuf:      nil,
-		buf:          nil,
-		degrade:      degrade,
-	}
-}
-
-func (pr *ParallelReader) ReadBlock(offset,size uint64){
-
-}
-
 //ReadFile reads ONE file  on the system and save it to local `savePath`.
 //
 //In case of any failure within fault tolerance, the file will be decoded first.
@@ -249,6 +217,6 @@ func (pr *ParallelReader) ReadBlock(offset,size uint64){
 //Second, send response to storage nodes when all is completed.
 //Third, the computing node reconstruct the file.
 
-func readFromNode(filename string, nodeId int) (data[]byte, err error){
+func readFromNode(filename string, nodeId int) (data []byte, err error) {
 	return nil, err
 }

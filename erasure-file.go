@@ -1,13 +1,26 @@
 package grasure
 
+type Version string
+
 //fileInfo defines the file-level information,
 //it's concurrently safe
 type fileInfo struct {
 	//file name
-	FileName string `json:"fileName"`
+	BaseName string `json:"baseName"`
+
+	//filepath is path in the dfs
+	FilePath string `json:"fileName"`
 
 	//file size
 	FileSize int64 `json:"fileSize"`
+
+	//version is file's version
+	version Version
+
+	//prev is the last version of file
+	prev *fileInfo
+	//next is the next version of file
+	next *fileInfo
 
 	//hash value (SHA256 by default)
 	Hash string `json:"fileHash"`
@@ -24,19 +37,17 @@ type fileInfo struct {
 	//system-level file info
 	// metaInfo     *os.fileInfo
 
-	//loadBalancedScheme is the most load-balanced scheme derived by SGA algo
-	loadBalancedScheme [][]int
 }
 
 type blockStat uint8
 type blockInfo struct {
-	stat blockStat
-	filename string
+	stat         blockStat
+	filename     string
 	actualOffset int64
 }
 
 //constant variables
 const (
-	blkOK         blockStat = 0
-	blkFail       blockStat = 1
+	blkOK   blockStat = 0
+	blkFail blockStat = 1
 )
