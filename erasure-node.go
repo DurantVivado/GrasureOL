@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-type NodeType int16
+type NodeType string
 
 const (
 	DATA      = "DATA"
@@ -22,48 +22,14 @@ const (
 	NAME      = "NAME"
 )
 
-func getType(role string) int16 {
-	switch role {
-	case CLIENT:
-		return 1
-	case SERVER:
-		return 1 << 1
-	case COMPUTING:
-		return 1 << 2
-	case GATEWAY:
-		return 1 << 3
-	case DATA:
-		return 1 << 4
-	case NAME:
-		return 1 << 5
-	default:
-		return -1
-	}
-	return 0
-}
-
-//A node may function as multiple types
-//low  |  1	 |   1	 | 	   1 	| 	 1	 |  1  |  1  | high
-//Type:Client, Server, Computing, Gateway, Data, Name
-const (
-	ClientNode NodeType = 1 << iota
-	ServerNode
-	ComputingNode
-	GateWayNode
-	DataNode
-	NameNode
-	//Add new kind of node here
-	TestNode
-)
-
-type NodeStat int
+type NodeStat string
 
 const (
-	NodeInit NodeStat = iota
-	HealthOK
-	CPUFailed
-	DiskFailed
-	NetworkError
+	NodeInit     NodeStat = "NodeInit"
+	HealthOK     NodeStat = "HealthOK"
+	CPUFailed    NodeStat = "CPUFailed"
+	DiskFailed   NodeStat = "DiskFailed"
+	NetworkError NodeStat = "NetworkError"
 )
 
 type Node struct {
@@ -74,7 +40,7 @@ type Node struct {
 	addr string
 
 	//nodeType is the type of the node
-	nodeType NodeType
+	nodeType []NodeType
 
 	//reduandancy specifies the node-level redundnacy policy to ensure data availability
 	redun Redundancy
@@ -98,7 +64,7 @@ type Node struct {
 	ctx context.Context
 }
 
-func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun Redundancy) *Node {
+func NewNode(ctx context.Context, id int, addr string, nodeType []NodeType, redun Redundancy) *Node {
 	//initialize various nodes w.r.t types
 	newnode := &Node{
 		uid:      int64(c.hash([]byte(strconv.Itoa(id)))),
@@ -115,8 +81,20 @@ func NewNode(ctx context.Context, id int, addr string, nodeType NodeType, redun 
 }
 
 func (n *Node) isRole(role string) bool {
-	nT := int16(n.nodeType)
-	return (nT & getType(role)) != 0
+	for _, r := range n.nodeType {
+		if string(r) == role {
+			return true
+		}
+	}
+	return false
+}
+
+func (n *Node) getRole() []string {
+	ret := []string{}
+	for _, r := range n.nodeType {
+		ret = append(ret, string(r))
+	}
+	return ret
 }
 
 func (n *Node) getState() string {

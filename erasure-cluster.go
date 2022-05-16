@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/DurantVivado/GrasureOL/xlog"
@@ -70,15 +71,15 @@ const (
 	None        Redundancy = "None"
 )
 
-type Mode int
+type Mode string
 
 const (
-	InitMode Mode = iota
-	NormalMode
-	DegradedMode
-	RecoveryMode
-	ScaleMode
-	PowerSaveMode
+	InitMode      Mode = "InitMode"
+	NormalMode    Mode = "NormalMode"
+	DegradedMode  Mode = "DegradedMode"
+	RecoveryMode  Mode = "RecoveryMode"
+	ScaleMode     Mode = "ScaleMode"
+	PowerSaveMode Mode = "PowerSaveMode"
 )
 
 type Output int
@@ -372,11 +373,11 @@ func (c *Cluster) ReadNodesAddr() {
 		}
 		lineArr := strings.Split(lineStr, " ")
 		addr := lineArr[0]
-		nodeTyp := int16(0)
+		nodeTyp := make([]NodeType, 0)
 		for _, role := range strings.Split(lineArr[1], ",") {
-			nodeTyp = nodeTyp | getType(role)
+			nodeTyp = append(nodeTyp, NodeType(role))
 		}
-		node := NewNode(c.ctx, id, addr, NodeType(nodeTyp), defaultRedundancy)
+		node := NewNode(c.ctx, id, addr, nodeTyp, defaultRedundancy)
 		if id <= c.usedNodeNum {
 			c.AddNode(id, node)
 		}
@@ -468,8 +469,62 @@ func (c *Cluster) CheckIfExistPool(pattern string) (*ErasurePool, bool) {
 	}
 }
 
-func (c *Cluster) getClusterInfo() string {
-	return
+//ClusterStatus is delpoyed on certain port of the server to inform the user of
+//real-time status of the cluster
+type ClusterStatus struct {
+	UUID  string
+	mode  string
+	total uint64
+	used  uint64
+	free  uint64
+	nodes []*NodeStatus
+}
+
+type NodeStatus struct {
+	uid    int
+	addr   string
+	role   string
+	status string
+}
+
+const templ = `<h1>Grasure Report</h1>
+<h2>UUID:{{}}</h2>
+<table>
+{{range .Items}}
+<tr>
+  <td><a href='{{.HTMLURL}}'>{{.Number}}</a></td>
+  <td>{{.State}}</td>
+  <td><a href='{{.User.HTMLURL}}'>{{.User.Login}}</a></td>
+  <td><a href='{{.HTMLURL}}'>{{.Title}}</a></td>
+</tr>
+{{end}}
+</table>`
+
+var report = template.Must(template.New("grasure report").Parse(templ))
+
+func (c *Cluster) getClusterInfo(wr io.Writer) {
+	s := &ClusterStatus{
+		UUID:  toString(c.UUID),
+		mode:  string(c.mode),
+		total: c.volume.Total,
+		used:  c.volume.Used,
+		free:  c.volume.Free,
+		nodes: make([]*NodeStatus, c.usedNodeNum),
+	}
+	c.nodeMap.Range(func(key, value interface{}) bool {
+		node, _ := value.(*Node)
+
+		s.nodes = append(s.nodes, &NodeStatus{
+			uid:    int(node.uid),
+			addr:   node.addr,
+			role:   strings.Join(node.getRole(), ","),
+			status: string(node.stat),
+		})
+		return false
+	})
+	if err := report.Execute(wr, s); err != nil {
+		xlog.Fatal(err)
+	}
 }
 
 //reset the storage
